@@ -135,7 +135,7 @@ const useGameStore = create<GameState>()(
           date: string,
           wordList: string[]
         ) {
-          const { gameDate: storedDate, todayCompleted } = get();
+          const { gameDate: storedDate } = get();
           const isNewDay = storedDate !== date;
 
           // Sort word list
@@ -238,7 +238,7 @@ const useGameStore = create<GameState>()(
 
       // Handle key press
       handleKeyPress: (key: string) => {
-        const { currentGuess, isGameWon, disabledLetters, todayCompleted } =
+        const { isGameWon, disabledLetters, todayCompleted } =
           get();
 
         if (todayCompleted || isGameWon || disabledLetters.includes(key)) {

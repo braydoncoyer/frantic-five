@@ -78,7 +78,7 @@ const Game: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-100 p-4">
         <div className="text-2xl font-bold text-indigo-700">
-          Loading today's word...
+          Loading today&apos;s word...
         </div>
       </div>
     );
