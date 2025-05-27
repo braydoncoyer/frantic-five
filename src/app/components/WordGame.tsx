@@ -104,7 +104,7 @@ const WordGame = () => {
   const [invalidWord, setInvalidWord] = useState(false);
   const [attempts, setAttempts] = useState(0);
   const [showCongrats, setShowCongrats] = useState(false);
-  const [disabledLetters, setDisabledLetters] = useState([]);
+  const [disabledLetters, setDisabledLetters] = useState<string[]>([]);
   const [powerupAvailable, setPowerupAvailable] = useState(true);
 
   // Initialize game
@@ -114,7 +114,7 @@ const WordGame = () => {
 
   // Add keyboard event listener
   useEffect(() => {
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key.match(/^[a-z]$/i) && !isGameWon) {
         const key = e.key.toLowerCase();
         if (!disabledLetters.includes(key)) {
@@ -169,7 +169,7 @@ const WordGame = () => {
   };
 
   // Handle key press
-  const handleKeyPress = (key) => {
+  const handleKeyPress = (key: string) => {
     if (!isGameWon && !disabledLetters.includes(key)) {
       // Find the first empty position
       setCurrentGuess((prevGuess) => {
@@ -201,7 +201,7 @@ const WordGame = () => {
   };
 
   // Check if word is valid
-  const isValidWord = (word) => {
+  const isValidWord = (word: string) => {
     return wordList.includes(word.toLowerCase());
   };
 
