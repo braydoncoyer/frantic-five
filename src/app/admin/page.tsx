@@ -1,8 +1,8 @@
 // app/admin/page.tsx
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
-import { addNewWords } from "../actions";
 
 export default function AdminPage() {
   const [newWords, setNewWords] = useState("");
@@ -30,31 +30,6 @@ export default function AdminPage() {
       });
       setIsLoading(false);
       return;
-    }
-
-    try {
-      const result = await addNewWords(wordsArray);
-
-      if (result.success) {
-        setMessage({
-          text: result.message,
-          type: "success",
-        });
-        setNewWords(""); // Clear the input
-      } else {
-        setMessage({
-          text: result.message,
-          type: "error",
-        });
-      }
-    } catch (error) {
-      console.error("Error adding words:", error);
-      setMessage({
-        text: "An error occurred while adding words",
-        type: "error",
-      });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -125,12 +100,12 @@ export default function AdminPage() {
         </div>
 
         <div className="mt-6 text-center">
-          <a
+          <Link
             href="/"
             className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
           >
             Return to Game
-          </a>
+          </Link>
         </div>
       </div>
     </div>
