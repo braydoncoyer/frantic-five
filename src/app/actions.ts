@@ -43,7 +43,14 @@ export async function getTodaysWord() {
       return { word: null, error: "No word found" };
     }
 
-    return { word: data.word.word, error: null };
+    type DailyWordResponse = {
+      date: string;
+      word: {
+        word: string;
+      };
+    };
+
+    return { word: (data as unknown as DailyWordResponse).word.word, error: null };
   } catch (error) {
     console.error("Exception in getTodaysWord:", error);
     return { word: null, error: "Server error" };
