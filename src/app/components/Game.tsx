@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useEffect } from "react";
 import useGameStore from "../store/useGameStore";
 import GameInfo from "./GameInfo";
@@ -8,13 +9,39 @@ import PowerUp from "./PowerUp";
 import CongratsModal from "./CongratsModal";
 
 const Game: React.FC = () => {
-  const { startNewGame } = useGameStore();
+  const {
+    initializeGame,
+    isLoading,
+    todayCompleted,
+    setWordList,
+    error,
+    clearError,
+    gameDate,
+    secretWord,
+  } = useGameStore();
 
-  // Initialize game and set up keyboard event listener
+  // Load word list from injected script and initialize game
   useEffect(() => {
-    startNewGame();
+    // Get the word list from the injected script
+    const wordListElement = document.getElementById("word-list-data");
+    if (wordListElement) {
+      try {
+        const words = JSON.parse(wordListElement.innerHTML);
+        if (Array.isArray(words) && words.length > 0) {
+          setWordList(words);
+          console.log(`Loaded ${words.length} words from script`);
+        }
+      } catch (error) {
+        console.error("Error parsing word list:", error);
+      }
+    }
 
-    // Add keyboard event listener
+    // Initialize the game
+    initializeGame();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Add keyboard event listener
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const { key } = e;
       const {
@@ -24,9 +51,12 @@ const Game: React.FC = () => {
         isGameWon,
         disabledLetters,
         getFilledPositions,
+        todayCompleted,
       } = useGameStore.getState();
 
-      if (key.match(/^[a-z]$/i) && !isGameWon && getFilledPositions() < 5) {
+      if (todayCompleted || isGameWon) return;
+
+      if (key.match(/^[a-z]$/i) && getFilledPositions() < 5) {
         const lowerKey = key.toLowerCase();
         if (!disabledLetters.includes(lowerKey)) {
           handleKeyPress(lowerKey);
@@ -42,17 +72,80 @@ const Game: React.FC = () => {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-100 p-4">
+        <div className="text-2xl font-bold text-indigo-700">
+          Loading today's word...
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-100 p-4">
+        <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
+          <h2 className="text-2xl font-bold text-red-700 mb-4">Error</h2>
+          <p className="mb-6 text-gray-700">{error}</p>
+          <div className="flex gap-4">
+            <button
+              onClick={() => initializeGame()}
+              className="flex-1 py-2 px-4 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
+            >
+              Try Again
+            </button>
+            <button
+              onClick={() => clearError()}
+              className="flex-1 py-2 px-4 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-slate-100 p-4">
-      <h1 className="text-3xl font-bold mb-8 text-indigo-700">Word Finder</h1>
+      <h1 className="text-3xl font-bold mb-8 text-orange-500">Frantic Five</h1>
 
       <GameInfo />
-      <PowerUp />
+      {!todayCompleted && <PowerUp />}
       <GameBoard />
       <Keyboard />
       <CongratsModal />
+
+      {/* Daily Word Timer */}
+      {todayCompleted && (
+        <div className="mt-8 p-4 bg-white rounded-lg shadow-md">
+          <h2 className="text-xl font-semibold text-indigo-700 mb-2">
+            Come back tomorrow!
+          </h2>
+          <p className="text-gray-600">
+            New word available at midnight Central Time.
+          </p>
+          <div className="mt-4 text-center">
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
+            >
+              Check for new word
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Debug info - remove in production */}
+      {process.env.NODE_ENV === "development" && (
+        <div className="mt-8 p-4 bg-white rounded-lg shadow-md text-xs text-gray-500">
+          <p>Game Date: {gameDate}</p>
+          <p>Secret Word: {secretWord}</p>
+        </div>
+      )}
     </div>
   );
 };
