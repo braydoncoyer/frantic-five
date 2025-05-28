@@ -92,8 +92,8 @@ const useGameStore = create<GameState>()(
             console.log("Game already completed for today, restoring state");
             set({
               isLoading: false,
-              secretWord: word,
-              currentGuess: [...word],
+              secretWord: word || "",
+              currentGuess: word ? [...word] : ["", "", "", "", ""],
             });
             return;
           }
