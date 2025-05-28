@@ -7,7 +7,6 @@ const CongratsModal: React.FC = () => {
 
   if (!showCongrats) return null;
 
-  // Create a shareable results text (similar to Wordle)
   const generateShareText = () => {
     const dateStr = new Date().toLocaleDateString("en-US", {
       month: "numeric",
@@ -15,9 +14,9 @@ const CongratsModal: React.FC = () => {
       year: "numeric",
     });
 
-    return `Word Finder ${dateStr} - Found in ${attempts} ${
+    return `Frantic Five ${dateStr} - Found in ${attempts} ${
       attempts === 1 ? "try" : "tries"
-    }!\n\nCan you find today's word? Play at wordfinder.example.com`;
+    }!\n\nCan you find today's word? Play at https://franticfive.com`;
   };
 
   // Copy results to clipboard
@@ -31,6 +30,15 @@ const CongratsModal: React.FC = () => {
       .catch((err) => {
         console.error("Could not copy text: ", err);
       });
+  };
+
+  // Share results on Twitter
+  const handleTweet = () => {
+    const shareText = generateShareText();
+    const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
+      shareText
+    )}`;
+    window.open(tweetUrl, "_blank");
   };
 
   return (
@@ -53,6 +61,12 @@ const CongratsModal: React.FC = () => {
             className="flex-1 py-3 bg-green-600 text-white rounded font-semibold hover:bg-green-700 transition-colors"
           >
             Share Results
+          </button>
+          <button
+            onClick={handleTweet}
+            className="flex-1 py-3 bg-blue-500 text-white rounded font-semibold hover:bg-blue-600 transition-colors"
+          >
+            Tweet Results
           </button>
           <button
             onClick={closeCongratsModal}

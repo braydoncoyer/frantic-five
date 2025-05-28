@@ -12,13 +12,13 @@ const GameBoard: React.FC = () => {
   } = useGameStore();
 
   return (
-    <div className="mb-8 w-full max-w-md">
+    <div className="mb-8 w-full max-w-md text-slate-900">
       {/* Top word */}
-      <div className="flex justify-center mb-4">
+      <div className="flex justify-center mb-8">
         {topWord.split("").map((letter, index) => (
           <div
             key={`top-${index}`}
-            className="w-12 h-12 border-2 border-indigo-400 rounded m-1 flex items-center justify-center text-xl font-semibold bg-white shadow-md uppercase"
+            className="w-13 h-13 border-2 border-indigo-100 rounded-md m-1 flex items-center justify-center text-xl font-semibold bg-white shadow-md uppercase"
           >
             {letter}
           </div>
@@ -26,17 +26,17 @@ const GameBoard: React.FC = () => {
       </div>
 
       {/* Current guess */}
-      <div className="flex justify-center mb-4">
+      <div className="flex justify-center mb-8">
         {currentGuess.map((letter, index) => (
           <div
             key={`guess-${index}`}
-            className={`w-12 h-12 border-2 ${
+            className={`w-16 h-16 border-2 ${
               invalidWord
                 ? "border-red-500 bg-red-100"
                 : letter
-                ? "border-indigo-600 bg-white hover:bg-indigo-100 cursor-pointer"
+                ? "border-orange-400 bg-white hover:bg-indigo-100 cursor-pointer"
                 : "border-gray-300 bg-gray-50"
-            } rounded m-1 flex items-center justify-center text-xl font-semibold shadow-md uppercase`}
+            } rounded-md mx-2 flex items-center justify-center text-xl font-semibold shadow-md uppercase`}
             onClick={() => {
               if (letter && !isGameWon) {
                 removeLetter(index);
@@ -53,7 +53,7 @@ const GameBoard: React.FC = () => {
         {bottomWord.split("").map((letter, index) => (
           <div
             key={`bottom-${index}`}
-            className="w-12 h-12 border-2 border-indigo-400 rounded m-1 flex items-center justify-center text-xl font-semibold bg-white shadow-md uppercase"
+            className="w-13 h-13 border-2 border-indigo-100 rounded-md m-1 flex items-center justify-center text-xl font-semibold bg-white shadow-md uppercase"
           >
             {letter}
           </div>

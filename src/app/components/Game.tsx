@@ -5,7 +5,6 @@ import useGameStore from "../store/useGameStore";
 import GameInfo from "./GameInfo";
 import GameBoard from "./GameBoard";
 import Keyboard from "./Keyboard";
-import PowerUp from "./PowerUp";
 import CongratsModal from "./CongratsModal";
 
 const Game: React.FC = () => {
@@ -111,10 +110,9 @@ const Game: React.FC = () => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-slate-100 p-4">
-      <h1 className="text-3xl font-bold mb-8 text-orange-500">Frantic Five</h1>
+      <h1 className="text-5xl font-bold mb-8 text-orange-500">Frantic Five</h1>
 
       <GameInfo />
-      {!todayCompleted && <PowerUp />}
       <GameBoard />
       <Keyboard />
       <CongratsModal />

@@ -83,16 +83,20 @@ const useGameStore = create<GameState>()(
           const currentDate = new Date().toISOString().split("T")[0];
           const { gameDate: storedDate, todayCompleted } = get();
 
-          // If game already completed for today, just restore state
-          if (storedDate === currentDate && todayCompleted) {
-            console.log("Game already completed for today, restoring state");
-            set({ isLoading: false });
-            return;
-          }
-
           // Get today's word from the server
           console.log("Fetching today's word...");
           const { word, error } = await getTodaysWord();
+
+          // If game already completed for today, just restore state
+          if (storedDate === currentDate && todayCompleted) {
+            console.log("Game already completed for today, restoring state");
+            set({
+              isLoading: false,
+              secretWord: word,
+              currentGuess: [...word],
+            });
+            return;
+          }
 
           if (!word) {
             console.error("Error getting daily word:", error);
@@ -304,6 +308,8 @@ const useGameStore = create<GameState>()(
         if (get().getFilledPositions() === 5) {
           const word = currentGuess.join("");
 
+          console.log(word, secretWord);
+
           if (wordList.includes(word.toLowerCase())) {
             const newAttempts = attempts + 1;
             set({ attempts: newAttempts });
@@ -313,6 +319,7 @@ const useGameStore = create<GameState>()(
                 isGameWon: true,
                 showCongrats: true,
                 todayCompleted: true,
+                currentGuess: secretWord.split(""),
               });
             } else {
               // Determine if guess goes above or below the secret word

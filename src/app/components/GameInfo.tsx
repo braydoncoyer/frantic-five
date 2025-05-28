@@ -5,20 +5,16 @@ const GameInfo: React.FC = () => {
   const { attempts } = useGameStore();
 
   return (
-    <div className="mb-8">
-      <p className="text-sm text-gray-600 mb-2 text-center">
+    <div className="mb-8 text-balance text-sm text-center">
+      <p className="text-gray-600 mb-2">
         Find the secret 5-letter word that falls alphabetically between the top
         and bottom words.
       </p>
-      <p className="text-sm text-gray-600 mb-1 text-center">
-        Use your keyboard or click the letters below.
+      <p className="text-gray-600 mb-4">
+        Use your keyboard or click the letters below. Click on any letter in the
+        middle row to remove it.
       </p>
-      <p className="text-sm text-gray-600 mb-1 text-center">
-        Click on any letter in the middle row to remove it.
-      </p>
-      <p className="text-sm text-gray-600 mb-4 text-center">
-        Attempts: {attempts}
-      </p>
+      <p className="text-gray-600">Attempts: {attempts}</p>
     </div>
   );
 };
