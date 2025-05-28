@@ -23,7 +23,7 @@ export async function getTodaysWord() {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Get timezone debug info
-    const { data: tzDebugData, error: tzDebugError } = await supabase.rpc(
+    const { data: tzDebugData } = await supabase.rpc(
       "debug_all_timezone_info"
     );
     console.log("Timezone debug info:", tzDebugData);
@@ -46,7 +46,7 @@ export async function getTodaysWord() {
     console.log("Server date (Central Time):", dateData);
 
     // Get all daily words for debugging
-    const { data: allDailyWords, error: allDailyWordsError } = await supabase
+    const { data: allDailyWords } = await supabase
       .from("daily_words")
       .select(
         `
@@ -97,6 +97,13 @@ export async function getTodaysWord() {
 
         console.log("Set word result:", setWordResult);
 
+        type RetryWordResponse = {
+          date: string;
+          word: {
+            word: string;
+          };
+        };
+
         // Try to get the word again
         const { data: retryData, error: retryError } = await supabase
           .from("daily_words")
@@ -124,7 +131,7 @@ export async function getTodaysWord() {
         }
 
         return {
-          word: retryData.word.word,
+          word: (retryData as unknown as RetryWordResponse).word.word,
           error: null,
           serverDate: dateData,
           debugInfo: {
@@ -146,6 +153,13 @@ export async function getTodaysWord() {
       };
     }
 
+    type DailyWordResponse = {
+      date: string;
+      word: {
+        word: string;
+      };
+    }
+
     if (!data || !data.word) {
       console.error("No word found for today");
       return {
@@ -160,7 +174,7 @@ export async function getTodaysWord() {
     }
 
     return {
-      word: data.word.word,
+      word: (data as unknown as DailyWordResponse).word.word,
       error: null,
       serverDate: dateData,
       debugInfo: {
