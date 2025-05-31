@@ -11,12 +11,12 @@ function getSupabaseClient(isAdminOperation = false) {
     // Use service role for admin operations (bypasses RLS)
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!serviceKey) throw new Error("Missing service role key");
-    return createClient(supabaseUrl, serviceKey);
+    return createClient(supabaseUrl!, serviceKey!);
   } else {
     // Use anon key for regular operations
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     if (!anonKey) throw new Error("Missing anon key");
-    return createClient(supabaseUrl, anonKey);
+    return createClient(supabaseUrl!, anonKey!);
   }
 }
 
