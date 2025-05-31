@@ -3,29 +3,32 @@
 
 import { createClient } from "@supabase/supabase-js";
 
+// Helper to get the right Supabase client based on operation type
+function getSupabaseClient(isAdminOperation = false) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  if (isAdminOperation) {
+    // Use service role for admin operations (bypasses RLS)
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!serviceKey) throw new Error("Missing service role key");
+    return createClient(supabaseUrl!, serviceKey!);
+  } else {
+    // Use anon key for regular operations
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!anonKey) throw new Error("Missing anon key");
+    return createClient(supabaseUrl!, anonKey!);
+  }
+}
+
 // Simple function to get today's word from Supabase
 export async function getTodaysWord() {
   try {
-    // Create Supabase client
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseKey) {
-      console.error("Missing Supabase credentials");
-      return {
-        word: null,
-        error: "Configuration error",
-        serverDate: null,
-        debugInfo: null,
-      };
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Create Supabase client - READ operation, but calls set_central_time_daily_word if needed
+    const supabase = getSupabaseClient(false); // Start with anon for reads
+    const adminSupabase = getSupabaseClient(true); // Admin client for mutations
 
     // Get timezone debug info
-    const { data: tzDebugData } = await supabase.rpc(
-      "debug_all_timezone_info"
-    );
+    const { data: tzDebugData } = await supabase.rpc("debug_all_timezone_info");
     console.log("Timezone debug info:", tzDebugData);
 
     // Get current date in Central Time timezone (properly converted)
@@ -51,7 +54,7 @@ export async function getTodaysWord() {
       .select(
         `
         date,
-        word:words!inner(word)
+        word:words!daily_words_word_id_fkey(word)
       `
       )
       .order("date", { ascending: false })
@@ -65,7 +68,7 @@ export async function getTodaysWord() {
       .select(
         `
         date,
-        word:words!inner(word)
+        word:words!daily_words_word_id_fkey(word)
       `
       )
       .eq("date", dateData)
@@ -77,9 +80,9 @@ export async function getTodaysWord() {
       if (error.code === "PGRST116") {
         // No rows found
         console.log("No word found for today, trying to set it...");
-        const { data: setWordResult, error: setWordError } = await supabase.rpc(
-          "set_central_time_daily_word"
-        );
+        // USE ADMIN CLIENT for the mutation
+        const { data: setWordResult, error: setWordError } =
+          await adminSupabase.rpc("set_central_time_daily_word");
 
         if (setWordError) {
           console.error("Error setting daily word:", setWordError);
@@ -104,13 +107,13 @@ export async function getTodaysWord() {
           };
         };
 
-        // Try to get the word again
+        // Try to get the word again (can use regular client for read)
         const { data: retryData, error: retryError } = await supabase
           .from("daily_words")
           .select(
             `
             date,
-            word:words!inner(word)
+            word:words!daily_words_word_id_fkey(word)
           `
           )
           .eq("date", dateData)
@@ -158,7 +161,7 @@ export async function getTodaysWord() {
       word: {
         word: string;
       };
-    }
+    };
 
     if (!data || !data.word) {
       console.error("No word found for today");
@@ -196,15 +199,8 @@ export async function getTodaysWord() {
 // Fallback function to get any random word
 export async function getRandomWord() {
   try {
-    // Create Supabase client
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseKey) {
-      return { word: "clock", error: "Configuration error" }; // Hardcoded fallback
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // READ operation - use anon client
+    const supabase = getSupabaseClient(false);
 
     // Get current date from the server
     const { data: dateData } = await supabase.rpc("get_central_time_date");
@@ -214,7 +210,7 @@ export async function getRandomWord() {
     const { data, error } = await supabase
       .from("words")
       .select("word")
-      .order("random()")
+      .order("id", { ascending: false })
       .limit(1)
       .single();
 
@@ -233,15 +229,8 @@ export async function getRandomWord() {
 // Get all words for validation
 export async function getAllWords() {
   try {
-    // Create Supabase client
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseKey) {
-      return [];
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // READ operation - use anon client
+    const supabase = getSupabaseClient(false);
 
     // Get all words with pagination
     let allWords: string[] = [];
@@ -278,15 +267,8 @@ export async function getAllWords() {
 // Admin function to set today's word manually
 export async function setTodaysWord() {
   try {
-    // Create Supabase client
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseKey) {
-      return { success: false, message: "Missing Supabase credentials" };
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // MUTATION operation - use admin client
+    const supabase = getSupabaseClient(true);
 
     // Call the set_daily_word function
     const { data, error } = await supabase.rpc("set_central_time_daily_word");
@@ -300,5 +282,80 @@ export async function setTodaysWord() {
   } catch (error) {
     console.error("Exception in setTodaysWord:", error);
     return { success: false, message: "Server error" };
+  }
+}
+
+// Get the initial top and bottom words for today
+export async function getInitialWords() {
+  try {
+    // READ operation - use anon client
+    const supabase = getSupabaseClient(false);
+
+    // Get current date in Central Time
+    const { data: dateData, error: dateError } = await supabase.rpc(
+      "get_central_time_date"
+    );
+
+    if (dateError || !dateData) {
+      console.error("Error getting central time date:", dateError);
+      return {
+        topWord: null,
+        bottomWord: null,
+        error: "Failed to get server date",
+      };
+    }
+
+    // Get today's daily words with initial top and bottom words
+    const { data, error } = await supabase
+      .from("daily_words")
+      .select(
+        `
+        date,
+        word:words!daily_words_word_id_fkey(word),
+        initial_top_word:words!daily_words_initial_top_word_id_fkey(word),
+        initial_bottom_word:words!daily_words_initial_bottom_word_id_fkey(word)
+      `
+      )
+      .eq("date", dateData)
+      .single();
+
+    if (error) {
+      console.error("Error fetching initial words:", error);
+      return {
+        topWord: null,
+        bottomWord: null,
+        error: error.message,
+      };
+    }
+
+    type InitialWordsResponse = {
+      date: string;
+      word: { word: string };
+      initial_top_word: { word: string };
+      initial_bottom_word: { word: string };
+    };
+
+    if (!data || !data.initial_top_word || !data.initial_bottom_word) {
+      return {
+        topWord: null,
+        bottomWord: null,
+        error: "No initial words found for today",
+      };
+    }
+
+    const typedData = data as unknown as InitialWordsResponse;
+
+    return {
+      topWord: typedData.initial_top_word.word,
+      bottomWord: typedData.initial_bottom_word.word,
+      error: null,
+    };
+  } catch (error) {
+    console.error("Exception in getInitialWords:", error);
+    return {
+      topWord: null,
+      bottomWord: null,
+      error: "Server error",
+    };
   }
 }
