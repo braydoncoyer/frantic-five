@@ -1,7 +1,7 @@
 // store/useGameStore.ts
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { getTodaysWord, getRandomWord, getAllWords } from "@/app/actions";
+import { getTodaysWord, getRandomWord, getAllWords, getInitialWords } from "@/app/actions";
 
 interface GameState {
   // Game state
@@ -20,6 +20,7 @@ interface GameState {
   gameDate: string | null;
   wordList: string[];
   error: string | null;
+  feedbackMessage: string | null;
 
   // Actions
   initializeGame: () => Promise<void>;
@@ -32,6 +33,7 @@ interface GameState {
   closeCongratsModal: () => void;
   clearError: () => void;
   setWordList: (words: string[]) => void;
+  clearFeedback: () => void;
 }
 
 // Create a game store with persistence for tracking completion status
@@ -54,12 +56,16 @@ const useGameStore = create<GameState>()(
       gameDate: null,
       wordList: [],
       error: null,
+      feedbackMessage: null,
 
       // Set the word list
       setWordList: (words: string[]) => set({ wordList: words }),
 
       // Clear error
       clearError: () => set({ error: null }),
+
+      // Clear feedback message
+      clearFeedback: () => set({ feedbackMessage: null }),
 
       // Initialize game
       initializeGame: async () => {
@@ -83,9 +89,12 @@ const useGameStore = create<GameState>()(
           const currentDate = new Date().toISOString().split("T")[0];
           const { gameDate: storedDate, todayCompleted } = get();
 
-          // Get today's word from the server
-          console.log("Fetching today's word...");
-          const { word, error } = await getTodaysWord();
+          // Get today's word and initial words from the server
+          console.log("Fetching today's word and initial words...");
+          const [{ word, error }, { topWord, bottomWord }] = await Promise.all([
+            getTodaysWord(),
+            getInitialWords()
+          ]);
 
           // If game already completed for today, just restore state
           if (storedDate === currentDate && todayCompleted) {
@@ -121,7 +130,16 @@ const useGameStore = create<GameState>()(
 
           // Successfully got daily word
           console.log("Using daily word:", word);
-          setupGame(word, currentDate, wordList);
+          
+          // If we have initial words from Supabase, use them
+          if (topWord && bottomWord) {
+            console.log("Using initial words from Supabase:", { topWord, bottomWord });
+            setupGameWithInitialWords(word, topWord, bottomWord, currentDate);
+          } else {
+            // Fallback to the old method of selecting initial words
+            console.log("Falling back to local initial word selection");
+            setupGame(word, currentDate, wordList);
+          }
         } catch (error) {
           console.error("Error initializing game:", error);
           set({
@@ -131,6 +149,50 @@ const useGameStore = create<GameState>()(
                 ? error.message
                 : "An unexpected error occurred",
           });
+        }
+
+        // Helper function to set up the game with initial words from Supabase
+        function setupGameWithInitialWords(
+          secretWord: string,
+          initialTopWord: string,
+          initialBottomWord: string,
+          date: string
+        ) {
+          const { gameDate: storedDate } = get();
+          const isNewDay = storedDate !== date;
+
+          // If it's a new day, reset the game state
+          if (isNewDay) {
+            set({
+              topWord: initialTopWord,
+              secretWord,
+              bottomWord: initialBottomWord,
+              currentGuess: ["", "", "", "", ""],
+              isGameWon: false,
+              invalidWord: false,
+              attempts: 0,
+              showCongrats: false,
+              disabledLetters: [],
+              powerupAvailable: true,
+              gameDate: date,
+              isLoading: false,
+              todayCompleted: false,
+              error: null,
+            });
+          } else {
+            // Same day, just update the words and ensure game state is correct
+            set({
+              topWord: initialTopWord,
+              secretWord,
+              bottomWord: initialBottomWord,
+              isLoading: false,
+              error: null,
+              // Reset game state if it was previously won
+              isGameWon: false,
+              showCongrats: false,
+              currentGuess: ["", "", "", "", ""],
+            });
+          }
         }
 
         // Helper function to set up the game
@@ -187,13 +249,17 @@ const useGameStore = create<GameState>()(
                 error: null,
               });
             } else {
-              // Same day, just update the words
+              // Same day, just update the words and ensure game state is correct
               set({
                 topWord,
                 secretWord,
                 bottomWord,
                 isLoading: false,
                 error: null,
+                // Reset game state if it was previously won
+                isGameWon: false,
+                showCongrats: false,
+                currentGuess: ["", "", "", "", ""],
               });
             }
             return;
@@ -228,13 +294,17 @@ const useGameStore = create<GameState>()(
               error: null,
             });
           } else {
-            // Same day, just update the words
+            // Same day, just update the words and ensure game state is correct
             set({
               topWord,
               secretWord,
               bottomWord,
               isLoading: false,
               error: null,
+              // Reset game state if it was previously won
+              isGameWon: false,
+              showCongrats: false,
+              currentGuess: ["", "", "", "", ""],
             });
           }
         }
@@ -299,52 +369,87 @@ const useGameStore = create<GameState>()(
 
       // Handle word submission
       handleSubmit: async () => {
-        const { currentGuess, secretWord, attempts, todayCompleted, wordList } =
+        const { currentGuess, secretWord, attempts, todayCompleted, wordList, topWord, bottomWord } =
           get();
 
         if (todayCompleted) return;
 
         // Check if all positions are filled
         if (get().getFilledPositions() === 5) {
-          const word = currentGuess.join("");
+          const word = currentGuess.join("").toLowerCase();
 
-          console.log(word, secretWord);
-
-          if (wordList.includes(word.toLowerCase())) {
-            const newAttempts = attempts + 1;
-            set({ attempts: newAttempts });
-
-            if (word.toLowerCase() === secretWord.toLowerCase()) {
-              set({
-                isGameWon: true,
-                showCongrats: true,
-                todayCompleted: true,
-                currentGuess: secretWord.split(""),
-              });
-            } else {
-              // Determine if guess goes above or below the secret word
-              if (word.toLowerCase() < secretWord.toLowerCase()) {
-                set({
-                  topWord: word.toLowerCase(),
-                  currentGuess: ["", "", "", "", ""],
-                });
-              } else {
-                set({
-                  bottomWord: word.toLowerCase(),
-                  currentGuess: ["", "", "", "", ""],
-                });
-              }
-            }
-          } else {
-            // Invalid word
-            set({ invalidWord: true });
-
+          if (!wordList.includes(word)) {
+            // Word not in dictionary
+            set({ 
+              invalidWord: true,
+              feedbackMessage: "Word not found in dictionary"
+            });
             setTimeout(() => {
               set({
                 invalidWord: false,
                 currentGuess: ["", "", "", "", ""],
+                feedbackMessage: null
               });
             }, 1500);
+            return;
+          }
+
+          // Check if word is within valid range
+          if (word <= topWord) {
+            // Word comes before top word
+            set({ 
+              invalidWord: true,
+              feedbackMessage: "Word must come after the top word"
+            });
+            setTimeout(() => {
+              set({
+                invalidWord: false,
+                currentGuess: ["", "", "", "", ""],
+                feedbackMessage: null
+              });
+            }, 1500);
+            return;
+          }
+
+          if (word >= bottomWord) {
+            // Word comes after bottom word
+            set({ 
+              invalidWord: true,
+              feedbackMessage: "Word must come before the bottom word"
+            });
+            setTimeout(() => {
+              set({
+                invalidWord: false,
+                currentGuess: ["", "", "", "", ""],
+                feedbackMessage: null
+              });
+            }, 1500);
+            return;
+          }
+
+          const newAttempts = attempts + 1;
+          set({ attempts: newAttempts });
+
+          if (word === secretWord.toLowerCase()) {
+            set({
+              isGameWon: true,
+              showCongrats: true,
+              todayCompleted: true,
+              currentGuess: secretWord.split(""),
+            });
+          } else {
+            // Determine if guess goes above or below the secret word
+            if (word < secretWord.toLowerCase()) {
+              set({
+                topWord: word,
+                currentGuess: ["", "", "", "", ""],
+              });
+            } else {
+              set({
+                bottomWord: word,
+                currentGuess: ["", "", "", "", ""],
+              });
+            }
           }
         }
       },

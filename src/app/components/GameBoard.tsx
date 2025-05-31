@@ -9,6 +9,7 @@ const GameBoard: React.FC = () => {
     invalidWord,
     isGameWon,
     removeLetter,
+    feedbackMessage,
   } = useGameStore();
 
   return (
@@ -59,6 +60,13 @@ const GameBoard: React.FC = () => {
           </div>
         ))}
       </div>
+
+      {/* Feedback message */}
+      {feedbackMessage && (
+        <div className="text-center mb-4 text-red-600 font-medium">
+          {feedbackMessage}
+        </div>
+      )}
     </div>
   );
 };
