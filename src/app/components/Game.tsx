@@ -2,14 +2,15 @@
 
 import React, { useEffect } from "react";
 import useGameStore from "../store/useGameStore";
-import GameInfo from "./GameInfo";
 import GameBoard from "./GameBoard";
 import Keyboard from "./Keyboard";
 import CongratsModal from "./CongratsModal";
+import HowToPlayModal from "./HowToPlayModal";
 
 const Game: React.FC = () => {
   const {
     initializeGame,
+    attempts,
     isLoading,
     todayCompleted,
     setWordList,
@@ -112,10 +113,11 @@ const Game: React.FC = () => {
     <div className="flex flex-col items-center justify-center min-h-screen bg-slate-100 p-4">
       <h1 className="text-5xl font-bold mb-8 text-orange-500">Frantic Five</h1>
 
-      <GameInfo />
       <GameBoard />
+      <p className="text-gray-600">Attempts: {attempts}</p>
       <Keyboard />
       <CongratsModal />
+      <HowToPlayModal />
 
       {/* Daily Word Timer */}
       {todayCompleted && (
