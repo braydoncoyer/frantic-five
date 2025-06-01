@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+@theme {
+  --font-sans: var(--font-geist-sans);
+}
+
+@layer base {
+  html {
+    @apply font-sans;
+  }
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

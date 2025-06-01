@@ -6,6 +6,7 @@ import GameBoard from "./GameBoard";
 import Keyboard from "./Keyboard";
 import CongratsModal from "./CongratsModal";
 import HowToPlayModal from "./HowToPlayModal";
+import Image from "next/image";
 
 const Game: React.FC = () => {
   const {
@@ -16,8 +17,6 @@ const Game: React.FC = () => {
     setWordList,
     error,
     clearError,
-    gameDate,
-    secretWord,
   } = useGameStore();
 
   // Load word list from injected script and initialize game
@@ -110,48 +109,30 @@ const Game: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-slate-100 p-4">
-      <h1 className="text-4xl sm:text-5xl font-bold mb-8 text-orange-500">
-        Frantic Five
-      </h1>
-
+    <div className="flex flex-col items-center justify-between min-h-screen bg-slate-100 p-4">
       {!todayCompleted && (
-        <>
-          <GameBoard />
+        <div className="flex flex-col items-center">
+          <Image
+            alt="Frantic Five"
+            width={374}
+            height={183}
+            src="/frantic_five_logo.svg"
+            className="aspect-video pointer-events-none"
+          />
+          <div className="mt-10">
+            <GameBoard />
+          </div>
           <p className="text-gray-600">Attempts: {attempts}</p>
-          <Keyboard />
-        </>
+        </div>
       )}
+
+      <div className="mb-2 sm:mb-4">
+        <Keyboard />
+      </div>
       <CongratsModal />
       <HowToPlayModal />
 
-      {/* Daily Word Timer */}
-      {todayCompleted && (
-        <div className="mt-8 p-4 bg-white rounded-lg shadow-md">
-          <h2 className="text-xl font-semibold text-indigo-700 mb-2">
-            Come back tomorrow!
-          </h2>
-          <p className="text-gray-600">
-            New word available at midnight Central Time.
-          </p>
-          <div className="mt-4 text-center">
-            <button
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
-            >
-              Check for new word
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Debug info - remove in production */}
-      {process.env.NODE_ENV === "development" && (
-        <div className="mt-8 p-4 bg-white rounded-lg shadow-md text-xs text-gray-500">
-          <p>Game Date: {gameDate}</p>
-          <p>Secret Word: {secretWord}</p>
-        </div>
-      )}
     </div>
   );
 };
