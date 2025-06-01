@@ -130,6 +130,13 @@ const useGameStore = create<GameState>()(
             if (topWord && bottomWord) {
               console.log("Using initial words from Supabase:", { topWord, bottomWord });
               setupGameWithInitialWords(word || "", topWord, bottomWord, currentDate);
+              // Save initial words to local storage (excluding secret word)
+              localStorage.setItem(`frantic-five-words-${currentDate}`, JSON.stringify({
+                topWord,
+                bottomWord,
+                updatedTopWord: false,
+                updatedBottomWord: false
+              }));
             } else {
               // Fallback to the old method of selecting initial words
               console.log("Falling back to local initial word selection");
@@ -148,6 +155,23 @@ const useGameStore = create<GameState>()(
               showCongrats: true,
             });
             return;
+          }
+
+          // Check if we have saved words in local storage
+          const savedWords = localStorage.getItem(`frantic-five-words-${currentDate}`);
+          if (savedWords) {
+            try {
+              const { topWord: savedTopWord, bottomWord: savedBottomWord, updatedTopWord, updatedBottomWord } = JSON.parse(savedWords);
+              if (savedTopWord && savedBottomWord) {
+                console.log("Restoring saved words from local storage:", { savedTopWord, savedBottomWord });
+                setupGameWithInitialWords(word || "", savedTopWord, savedBottomWord, currentDate);
+                // Restore the update flags
+                set({ updatedTopWord, updatedBottomWord });
+                return;
+              }
+            } catch (error) {
+              console.error("Error parsing saved words:", error);
+            }
           }
 
           if (!word) {
@@ -178,6 +202,13 @@ const useGameStore = create<GameState>()(
           if (topWord && bottomWord) {
             console.log("Using initial words from Supabase:", { topWord, bottomWord });
             setupGameWithInitialWords(word, topWord, bottomWord, currentDate);
+            // Save initial words to local storage (excluding secret word)
+            localStorage.setItem(`frantic-five-words-${currentDate}`, JSON.stringify({
+              topWord,
+              bottomWord,
+              updatedTopWord: false,
+              updatedBottomWord: false
+            }));
           } else {
             // Fallback to the old method of selecting initial words
             console.log("Falling back to local initial word selection");
@@ -409,8 +440,7 @@ const useGameStore = create<GameState>()(
 
       // Handle word submission
       handleSubmit: async () => {
-        const { currentGuess, secretWord, attempts, todayCompleted, wordList, topWord, bottomWord } =
-          get();
+        const { currentGuess, topWord, bottomWord, secretWord, attempts, wordList, todayCompleted } = get();
 
         if (todayCompleted) return;
 
@@ -475,7 +505,7 @@ const useGameStore = create<GameState>()(
               isGameWon: true,
               showCongrats: true,
               todayCompleted: true,
-              currentGuess: secretWord.split(""),
+              currentGuess: secretWord.split("")
             });
           } else {
             // Check if we've reached the guess limit
@@ -496,12 +526,28 @@ const useGameStore = create<GameState>()(
                 currentGuess: ["", "", "", "", ""],
                 updatedTopWord: true,
               });
+              // Save updated words to local storage (excluding secret word)
+              const currentDate = new Date().toISOString().split("T")[0];
+              localStorage.setItem(`frantic-five-words-${currentDate}`, JSON.stringify({
+                topWord: word,
+                bottomWord,
+                updatedTopWord: true,
+                updatedBottomWord: get().updatedBottomWord
+              }));
             } else {
               set({
                 bottomWord: word,
                 currentGuess: ["", "", "", "", ""],
                 updatedBottomWord: true,
               });
+              // Save updated words to local storage (excluding secret word)
+              const currentDate = new Date().toISOString().split("T")[0];
+              localStorage.setItem(`frantic-five-words-${currentDate}`, JSON.stringify({
+                topWord,
+                bottomWord: word,
+                updatedTopWord: get().updatedTopWord,
+                updatedBottomWord: true
+              }));
             }
           }
         }
