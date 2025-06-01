@@ -17,8 +17,6 @@ const Game: React.FC = () => {
     setWordList,
     error,
     clearError,
-    gameDate,
-    secretWord,
   } = useGameStore();
 
   // Load word list from injected script and initialize game
