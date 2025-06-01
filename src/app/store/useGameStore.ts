@@ -10,6 +10,7 @@ interface GameState {
   secretWord: string;
   currentGuess: string[];
   isGameWon: boolean;
+  isGameOver: boolean;
   invalidWord: boolean;
   attempts: number;
   showCongrats: boolean;
@@ -22,6 +23,8 @@ interface GameState {
   wordList: string[];
   error: string | null;
   feedbackMessage: string | null;
+  updatedTopWord: boolean;
+  updatedBottomWord: boolean;
 
   // Actions
   initializeGame: () => Promise<void>;
@@ -48,6 +51,7 @@ const useGameStore = create<GameState>()(
       secretWord: "",
       currentGuess: ["", "", "", "", ""],
       isGameWon: false,
+      isGameOver: false,
       invalidWord: false,
       attempts: 0,
       showCongrats: false,
@@ -60,6 +64,8 @@ const useGameStore = create<GameState>()(
       wordList: [],
       error: null,
       feedbackMessage: null,
+      updatedTopWord: false,
+      updatedBottomWord: false,
 
       // Set the word list
       setWordList: (words: string[]) => set({ wordList: words }),
@@ -72,7 +78,13 @@ const useGameStore = create<GameState>()(
 
       // Initialize game
       initializeGame: async () => {
-        set({ isLoading: true, error: null });
+        set({ 
+          isLoading: true, 
+          error: null,
+          updatedTopWord: false,
+          updatedBottomWord: false,
+          isGameOver: false
+        });
 
         try {
           // Get all words for validation if we don't have them yet
@@ -441,16 +453,29 @@ const useGameStore = create<GameState>()(
               currentGuess: secretWord.split(""),
             });
           } else {
+            // Check if we've reached the guess limit
+            if (newAttempts >= 5) {
+              set({
+                isGameOver: true,
+                showCongrats: true,
+                todayCompleted: true,
+                currentGuess: ["", "", "", "", ""],
+              });
+              return;
+            }
+
             // Determine if guess goes above or below the secret word
             if (word < secretWord.toLowerCase()) {
               set({
                 topWord: word,
                 currentGuess: ["", "", "", "", ""],
+                updatedTopWord: true,
               });
             } else {
               set({
                 bottomWord: word,
                 currentGuess: ["", "", "", "", ""],
+                updatedBottomWord: true,
               });
             }
           }
