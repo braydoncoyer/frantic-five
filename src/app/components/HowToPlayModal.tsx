@@ -7,11 +7,13 @@ const HowToPlayModal: React.FC = () => {
   if (!showHowToPlay) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
-        <h2 className="text-2xl font-bold text-indigo-700 mb-4">How to Play</h2>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg p-4 sm:p-8 max-w-md w-full mx-4 max-h-[90vh] flex flex-col">
+        <h2 className="text-xl sm:text-2xl font-bold text-indigo-700 mb-4">
+          How to Play
+        </h2>
 
-        <div className="space-y-4 text-gray-600">
+        <div className="space-y-4 text-gray-600 overflow-y-auto flex-grow pr-2">
           <p>
             Welcome to{" "}
             <span className="font-bold text-orange-500">Frantic Five</span>!

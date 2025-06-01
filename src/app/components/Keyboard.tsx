@@ -19,14 +19,17 @@ const Keyboard: React.FC = () => {
   ];
 
   return (
-    <div className="w-full max-w-md mt-24">
+    <div className="w-full max-w-[95vw] sm:max-w-md mt-8 sm:mt-24 px-2 sm:px-0">
       {keyboard.map((row, rowIndex) => (
-        <div key={`row-${rowIndex}`} className="flex justify-center mb-3 gap-2">
+        <div
+          key={`row-${rowIndex}`}
+          className="flex justify-center mb-2 sm:mb-3 gap-1 sm:gap-2"
+        >
           {rowIndex === 2 && (
             <button
               onClick={handleBackspace}
               disabled={getFilledPositions() === 0 || isGameWon}
-              className={`w-16 h-14 rounded font-semibold flex-shrink-0 flex-grow-0 cursor-pointer ${
+              className={`w-10 sm:w-16 h-8 sm:h-14 rounded font-semibold flex-shrink-0 flex-grow-0 cursor-pointer ${
                 getFilledPositions() > 0 && !isGameWon
                   ? "bg-red-500 text-white hover:bg-red-600"
                   : "bg-gray-300 text-gray-500"
@@ -45,13 +48,13 @@ const Keyboard: React.FC = () => {
                 isGameWon ||
                 disabledLetters.includes(key)
               }
-              className={`w-11 h-14 rounded font-semibold flex-shrink-0 flex-grow-0 cursor-pointer ${
+              className={`w-7 sm:w-11 h-8 sm:h-14 rounded font-semibold flex-shrink-0 flex-grow-0 cursor-pointer ${
                 disabledLetters.includes(key)
                   ? "bg-gray-300 text-gray-400 line-through"
                   : getFilledPositions() < 5 && !isGameWon
                   ? "bg-indigo-600 text-white hover:bg-indigo-700"
                   : "bg-gray-300 text-gray-500"
-              } transition-colors uppercase`}
+              } transition-colors uppercase text-xs sm:text-base`}
             >
               {key}
             </button>
@@ -61,7 +64,7 @@ const Keyboard: React.FC = () => {
             <button
               onClick={handleSubmit}
               disabled={getFilledPositions() !== 5 || isGameWon}
-              className={`w-16 h-14 rounded font-semibold flex-shrink-0 flex-grow-0 cursor-pointer ${
+              className={`w-10 sm:w-16 h-8 sm:h-14 rounded font-semibold flex-shrink-0 flex-grow-0 cursor-pointer ${
                 getFilledPositions() === 5 && !isGameWon
                   ? "bg-green-500 text-white hover:bg-green-600"
                   : "bg-gray-300 text-gray-500"
