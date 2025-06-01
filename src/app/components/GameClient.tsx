@@ -7,7 +7,21 @@ import Keyboard from "./Keyboard";
 import CongratsModal from "./CongratsModal";
 import HowToPlayModal from "./HowToPlayModal";
 
-const Game: React.FC = () => {
+interface GameClientProps {
+  initialWord: string;
+  initialTopWord: string;
+  initialBottomWord: string;
+  wordList: string[];
+  initialError: string | null;
+}
+
+const GameClient: React.FC<GameClientProps> = ({
+  initialWord,
+  initialTopWord,
+  initialBottomWord,
+  wordList,
+  initialError,
+}) => {
   const {
     initializeGame,
     attempts,
@@ -20,25 +34,108 @@ const Game: React.FC = () => {
     secretWord,
   } = useGameStore();
 
-  // Load word list from injected script and initialize game
+  // Initialize game with server data
   useEffect(() => {
-    // Get the word list from the injected script
-    const wordListElement = document.getElementById("word-list-data");
-    if (wordListElement) {
+    // Set the word list immediately
+    setWordList(wordList);
+
+    // Initialize game with server data
+    const currentDate = new Date().toISOString().split("T")[0];
+
+    // If we have an error from the server, set it
+    if (initialError) {
+      useGameStore.setState({ error: initialError, isLoading: false });
+      return;
+    }
+
+    // Check if game was already completed today
+    const savedState = localStorage.getItem("word-finder-storage");
+    let wasCompletedToday = false;
+    let savedAttempts = 0;
+    let wasGameWon = false;
+    let storedDate = null;
+
+    if (savedState) {
       try {
-        const words = JSON.parse(wordListElement.innerHTML);
-        if (Array.isArray(words) && words.length > 0) {
-          setWordList(words);
-          console.log(`Loaded ${words.length} words from script`);
-        }
+        const {
+          todayCompleted: completed,
+          attempts: savedAttemptsCount,
+          isGameWon: won,
+          gameDate: date,
+        } = JSON.parse(savedState);
+        wasCompletedToday = completed;
+        savedAttempts = savedAttemptsCount;
+        wasGameWon = won;
+        storedDate = date;
       } catch (error) {
-        console.error("Error parsing word list:", error);
+        console.error("Error parsing saved state:", error);
       }
     }
 
-    // Initialize the game
-    initializeGame();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    // If it's a new day, reset the game state
+    if (storedDate !== currentDate) {
+      useGameStore.setState({
+        topWord: initialTopWord,
+        secretWord: initialWord,
+        bottomWord: initialBottomWord,
+        currentGuess: ["", "", "", "", ""],
+        isGameWon: false,
+        invalidWord: false,
+        attempts: 0,
+        showCongrats: false,
+        disabledLetters: [],
+        gameDate: currentDate,
+        isLoading: false,
+        todayCompleted: false,
+        error: null,
+      });
+      return;
+    }
+
+    // If game was completed today, restore the completed state
+    if (wasCompletedToday) {
+      useGameStore.setState({
+        topWord: initialTopWord,
+        secretWord: initialWord,
+        bottomWord: initialBottomWord,
+        currentGuess: [...initialWord],
+        isGameWon: wasGameWon,
+        invalidWord: false,
+        attempts: savedAttempts,
+        showCongrats: true,
+        disabledLetters: [],
+        gameDate: currentDate,
+        isLoading: false,
+        todayCompleted: true,
+        error: null,
+      });
+      return;
+    }
+
+    // Otherwise, set up a new game
+    useGameStore.setState({
+      topWord: initialTopWord,
+      secretWord: initialWord,
+      bottomWord: initialBottomWord,
+      currentGuess: ["", "", "", "", ""],
+      isGameWon: false,
+      invalidWord: false,
+      attempts: 0,
+      showCongrats: false,
+      disabledLetters: [],
+      gameDate: currentDate,
+      isLoading: false,
+      todayCompleted: false,
+      error: null,
+    });
+  }, [
+    initialWord,
+    initialTopWord,
+    initialBottomWord,
+    wordList,
+    initialError,
+    setWordList,
+  ]);
 
   // Add keyboard event listener
   useEffect(() => {
@@ -111,9 +208,7 @@ const Game: React.FC = () => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-slate-100 p-4">
-      <h1 className="text-4xl sm:text-5xl font-bold mb-8 text-orange-500">
-        Frantic Five
-      </h1>
+      <h1 className="text-5xl font-bold mb-8 text-orange-500">Frantic Five</h1>
 
       {!todayCompleted && (
         <>
@@ -156,4 +251,4 @@ const Game: React.FC = () => {
   );
 };
 
-export default Game;
+export default GameClient;
