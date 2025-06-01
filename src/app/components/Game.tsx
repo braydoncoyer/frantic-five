@@ -113,9 +113,13 @@ const Game: React.FC = () => {
     <div className="flex flex-col items-center justify-center min-h-screen bg-slate-100 p-4">
       <h1 className="text-5xl font-bold mb-8 text-orange-500">Frantic Five</h1>
 
-      <GameBoard />
-      <p className="text-gray-600">Attempts: {attempts}</p>
-      <Keyboard />
+      {!todayCompleted && (
+        <>
+          <GameBoard />
+          <p className="text-gray-600">Attempts: {attempts}</p>
+          <Keyboard />
+        </>
+      )}
       <CongratsModal />
       <HowToPlayModal />
 

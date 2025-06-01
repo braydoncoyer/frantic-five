@@ -11,7 +11,7 @@ const HowToPlayModal: React.FC = () => {
       <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
         <h2 className="text-2xl font-bold text-indigo-700 mb-4">How to Play</h2>
 
-        <div className="space-y-4 text-gray-700">
+        <div className="space-y-4 text-gray-600">
           <p>
             Welcome to{" "}
             <span className="font-bold text-orange-500">Frantic Five</span>!
@@ -70,7 +70,7 @@ const HowToPlayModal: React.FC = () => {
 
         <button
           onClick={closeHowToPlayModal}
-          className="mt-6 w-full py-2 px-4 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
+          className="mt-6 w-full py-2 px-4 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors cursor-pointer"
         >
           Got it!
         </button>

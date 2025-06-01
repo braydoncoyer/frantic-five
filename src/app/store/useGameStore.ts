@@ -16,7 +16,6 @@ interface GameState {
   showCongrats: boolean;
   showHowToPlay: boolean;
   disabledLetters: string[];
-  powerupAvailable: boolean;
   isLoading: boolean;
   todayCompleted: boolean;
   gameDate: string | null;
@@ -33,7 +32,6 @@ interface GameState {
   removeLetter: (index: number) => void;
   getFilledPositions: () => number;
   handleSubmit: () => Promise<void>;
-  handlePowerup: () => void;
   closeCongratsModal: () => void;
   closeHowToPlayModal: () => void;
   clearError: () => void;
@@ -57,7 +55,6 @@ const useGameStore = create<GameState>()(
       showCongrats: false,
       showHowToPlay: true,
       disabledLetters: [],
-      powerupAvailable: true,
       isLoading: true,
       todayCompleted: false,
       gameDate: null,
@@ -111,6 +108,36 @@ const useGameStore = create<GameState>()(
             getInitialWords()
           ]);
 
+          // If it's a new day, reset all game state
+          if (storedDate !== currentDate) {
+            console.log("New day detected, resetting game state");
+            set({ 
+              isLoading: true, 
+              error: null,
+              updatedTopWord: false,
+              updatedBottomWord: false,
+              isGameOver: false,
+              showCongrats: false,
+              todayCompleted: false,
+              attempts: 0,
+              isGameWon: false,
+              currentGuess: ["", "", "", "", ""],
+              disabledLetters: [],
+              gameDate: currentDate
+            });
+            
+            // If we have initial words from Supabase, use them
+            if (topWord && bottomWord) {
+              console.log("Using initial words from Supabase:", { topWord, bottomWord });
+              setupGameWithInitialWords(word || "", topWord, bottomWord, currentDate);
+            } else {
+              // Fallback to the old method of selecting initial words
+              console.log("Falling back to local initial word selection");
+              setupGame(word || "", currentDate, wordList);
+            }
+            return;
+          }
+
           // If game already completed for today, just restore state
           if (storedDate === currentDate && todayCompleted) {
             console.log("Game already completed for today, restoring state");
@@ -118,6 +145,7 @@ const useGameStore = create<GameState>()(
               isLoading: false,
               secretWord: word || "",
               currentGuess: word ? [...word] : ["", "", "", "", ""],
+              showCongrats: true,
             });
             return;
           }
@@ -188,7 +216,6 @@ const useGameStore = create<GameState>()(
               attempts: 0,
               showCongrats: false,
               disabledLetters: [],
-              powerupAvailable: true,
               gameDate: date,
               isLoading: false,
               todayCompleted: false,
@@ -257,7 +284,6 @@ const useGameStore = create<GameState>()(
                 attempts: 0,
                 showCongrats: false,
                 disabledLetters: [],
-                powerupAvailable: true,
                 gameDate: date,
                 isLoading: false,
                 todayCompleted: false,
@@ -302,7 +328,6 @@ const useGameStore = create<GameState>()(
               attempts: 0,
               showCongrats: false,
               disabledLetters: [],
-              powerupAvailable: true,
               gameDate: date,
               isLoading: false,
               todayCompleted: false,
@@ -482,46 +507,6 @@ const useGameStore = create<GameState>()(
         }
       },
 
-      // Handle power-up: remove 3 letters not in the secret word
-      handlePowerup: () => {
-        const {
-          powerupAvailable,
-          isGameWon,
-          secretWord,
-          disabledLetters,
-          todayCompleted,
-        } = get();
-
-        if (todayCompleted || !powerupAvailable || isGameWon) return;
-
-        // Get all letters in the secret word
-        const secretLetters = new Set(secretWord.split(""));
-
-        // Get all letters not in the secret word
-        const alphabet = "abcdefghijklmnopqrstuvwxyz";
-        const nonSecretLetters = alphabet
-          .split("")
-          .filter(
-            (letter) =>
-              !secretLetters.has(letter) && !disabledLetters.includes(letter)
-          );
-
-        // Randomly select 3 letters to disable
-        const lettersToDisable: string[] = [];
-        for (let i = 0; i < 3 && nonSecretLetters.length > 0; i++) {
-          const randomIndex = Math.floor(
-            Math.random() * nonSecretLetters.length
-          );
-          lettersToDisable.push(nonSecretLetters[randomIndex]);
-          nonSecretLetters.splice(randomIndex, 1);
-        }
-
-        set({
-          disabledLetters: [...disabledLetters, ...lettersToDisable],
-          powerupAvailable: false,
-        });
-      },
-
       // Close congrats modal
       closeCongratsModal: () => set({ showCongrats: false }),
 
@@ -536,6 +521,8 @@ const useGameStore = create<GameState>()(
         gameDate: state.gameDate,
         attempts: state.attempts,
         showHowToPlay: state.showHowToPlay,
+        showCongrats: state.showCongrats,
+        isGameWon: state.isGameWon,
       }),
     }
   )
