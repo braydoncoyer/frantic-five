@@ -10,18 +10,20 @@ interface GameState {
   secretWord: string;
   currentGuess: string[];
   isGameWon: boolean;
+  isGameOver: boolean;
   invalidWord: boolean;
   attempts: number;
   showCongrats: boolean;
   showHowToPlay: boolean;
   disabledLetters: string[];
-  powerupAvailable: boolean;
   isLoading: boolean;
   todayCompleted: boolean;
   gameDate: string | null;
   wordList: string[];
   error: string | null;
   feedbackMessage: string | null;
+  updatedTopWord: boolean;
+  updatedBottomWord: boolean;
 
   // Actions
   initializeGame: () => Promise<void>;
@@ -30,7 +32,6 @@ interface GameState {
   removeLetter: (index: number) => void;
   getFilledPositions: () => number;
   handleSubmit: () => Promise<void>;
-  handlePowerup: () => void;
   closeCongratsModal: () => void;
   closeHowToPlayModal: () => void;
   clearError: () => void;
@@ -48,18 +49,20 @@ const useGameStore = create<GameState>()(
       secretWord: "",
       currentGuess: ["", "", "", "", ""],
       isGameWon: false,
+      isGameOver: false,
       invalidWord: false,
       attempts: 0,
       showCongrats: false,
       showHowToPlay: true,
       disabledLetters: [],
-      powerupAvailable: true,
       isLoading: true,
       todayCompleted: false,
       gameDate: null,
       wordList: [],
       error: null,
       feedbackMessage: null,
+      updatedTopWord: false,
+      updatedBottomWord: false,
 
       // Set the word list
       setWordList: (words: string[]) => set({ wordList: words }),
@@ -72,7 +75,13 @@ const useGameStore = create<GameState>()(
 
       // Initialize game
       initializeGame: async () => {
-        set({ isLoading: true, error: null });
+        set({ 
+          isLoading: true, 
+          error: null,
+          updatedTopWord: false,
+          updatedBottomWord: false,
+          isGameOver: false
+        });
 
         try {
           // Get all words for validation if we don't have them yet
@@ -99,6 +108,43 @@ const useGameStore = create<GameState>()(
             getInitialWords()
           ]);
 
+          // If it's a new day, reset all game state
+          if (storedDate !== currentDate) {
+            console.log("New day detected, resetting game state");
+            set({ 
+              isLoading: true, 
+              error: null,
+              updatedTopWord: false,
+              updatedBottomWord: false,
+              isGameOver: false,
+              showCongrats: false,
+              todayCompleted: false,
+              attempts: 0,
+              isGameWon: false,
+              currentGuess: ["", "", "", "", ""],
+              disabledLetters: [],
+              gameDate: currentDate
+            });
+            
+            // If we have initial words from Supabase, use them
+            if (topWord && bottomWord) {
+              console.log("Using initial words from Supabase:", { topWord, bottomWord });
+              setupGameWithInitialWords(word || "", topWord, bottomWord, currentDate);
+              // Save initial words to local storage (excluding secret word)
+              localStorage.setItem(`frantic-five-words-${currentDate}`, JSON.stringify({
+                topWord,
+                bottomWord,
+                updatedTopWord: false,
+                updatedBottomWord: false
+              }));
+            } else {
+              // Fallback to the old method of selecting initial words
+              console.log("Falling back to local initial word selection");
+              setupGame(word || "", currentDate, wordList);
+            }
+            return;
+          }
+
           // If game already completed for today, just restore state
           if (storedDate === currentDate && todayCompleted) {
             console.log("Game already completed for today, restoring state");
@@ -106,8 +152,26 @@ const useGameStore = create<GameState>()(
               isLoading: false,
               secretWord: word || "",
               currentGuess: word ? [...word] : ["", "", "", "", ""],
+              showCongrats: true,
             });
             return;
+          }
+
+          // Check if we have saved words in local storage
+          const savedWords = localStorage.getItem(`frantic-five-words-${currentDate}`);
+          if (savedWords) {
+            try {
+              const { topWord: savedTopWord, bottomWord: savedBottomWord, updatedTopWord, updatedBottomWord } = JSON.parse(savedWords);
+              if (savedTopWord && savedBottomWord) {
+                console.log("Restoring saved words from local storage:", { savedTopWord, savedBottomWord });
+                setupGameWithInitialWords(word || "", savedTopWord, savedBottomWord, currentDate);
+                // Restore the update flags
+                set({ updatedTopWord, updatedBottomWord });
+                return;
+              }
+            } catch (error) {
+              console.error("Error parsing saved words:", error);
+            }
           }
 
           if (!word) {
@@ -138,6 +202,13 @@ const useGameStore = create<GameState>()(
           if (topWord && bottomWord) {
             console.log("Using initial words from Supabase:", { topWord, bottomWord });
             setupGameWithInitialWords(word, topWord, bottomWord, currentDate);
+            // Save initial words to local storage (excluding secret word)
+            localStorage.setItem(`frantic-five-words-${currentDate}`, JSON.stringify({
+              topWord,
+              bottomWord,
+              updatedTopWord: false,
+              updatedBottomWord: false
+            }));
           } else {
             // Fallback to the old method of selecting initial words
             console.log("Falling back to local initial word selection");
@@ -176,7 +247,6 @@ const useGameStore = create<GameState>()(
               attempts: 0,
               showCongrats: false,
               disabledLetters: [],
-              powerupAvailable: true,
               gameDate: date,
               isLoading: false,
               todayCompleted: false,
@@ -245,7 +315,6 @@ const useGameStore = create<GameState>()(
                 attempts: 0,
                 showCongrats: false,
                 disabledLetters: [],
-                powerupAvailable: true,
                 gameDate: date,
                 isLoading: false,
                 todayCompleted: false,
@@ -290,7 +359,6 @@ const useGameStore = create<GameState>()(
               attempts: 0,
               showCongrats: false,
               disabledLetters: [],
-              powerupAvailable: true,
               gameDate: date,
               isLoading: false,
               todayCompleted: false,
@@ -372,8 +440,7 @@ const useGameStore = create<GameState>()(
 
       // Handle word submission
       handleSubmit: async () => {
-        const { currentGuess, secretWord, attempts, todayCompleted, wordList, topWord, bottomWord } =
-          get();
+        const { currentGuess, topWord, bottomWord, secretWord, attempts, wordList, todayCompleted } = get();
 
         if (todayCompleted) return;
 
@@ -438,63 +505,52 @@ const useGameStore = create<GameState>()(
               isGameWon: true,
               showCongrats: true,
               todayCompleted: true,
-              currentGuess: secretWord.split(""),
+              currentGuess: secretWord.split("")
             });
           } else {
+            // Check if we've reached the guess limit
+            if (newAttempts >= 5) {
+              set({
+                isGameOver: true,
+                showCongrats: true,
+                todayCompleted: true,
+                currentGuess: ["", "", "", "", ""],
+              });
+              return;
+            }
+
             // Determine if guess goes above or below the secret word
             if (word < secretWord.toLowerCase()) {
               set({
                 topWord: word,
                 currentGuess: ["", "", "", "", ""],
+                updatedTopWord: true,
               });
+              // Save updated words to local storage (excluding secret word)
+              const currentDate = new Date().toISOString().split("T")[0];
+              localStorage.setItem(`frantic-five-words-${currentDate}`, JSON.stringify({
+                topWord: word,
+                bottomWord,
+                updatedTopWord: true,
+                updatedBottomWord: get().updatedBottomWord
+              }));
             } else {
               set({
                 bottomWord: word,
                 currentGuess: ["", "", "", "", ""],
+                updatedBottomWord: true,
               });
+              // Save updated words to local storage (excluding secret word)
+              const currentDate = new Date().toISOString().split("T")[0];
+              localStorage.setItem(`frantic-five-words-${currentDate}`, JSON.stringify({
+                topWord,
+                bottomWord: word,
+                updatedTopWord: get().updatedTopWord,
+                updatedBottomWord: true
+              }));
             }
           }
         }
-      },
-
-      // Handle power-up: remove 3 letters not in the secret word
-      handlePowerup: () => {
-        const {
-          powerupAvailable,
-          isGameWon,
-          secretWord,
-          disabledLetters,
-          todayCompleted,
-        } = get();
-
-        if (todayCompleted || !powerupAvailable || isGameWon) return;
-
-        // Get all letters in the secret word
-        const secretLetters = new Set(secretWord.split(""));
-
-        // Get all letters not in the secret word
-        const alphabet = "abcdefghijklmnopqrstuvwxyz";
-        const nonSecretLetters = alphabet
-          .split("")
-          .filter(
-            (letter) =>
-              !secretLetters.has(letter) && !disabledLetters.includes(letter)
-          );
-
-        // Randomly select 3 letters to disable
-        const lettersToDisable: string[] = [];
-        for (let i = 0; i < 3 && nonSecretLetters.length > 0; i++) {
-          const randomIndex = Math.floor(
-            Math.random() * nonSecretLetters.length
-          );
-          lettersToDisable.push(nonSecretLetters[randomIndex]);
-          nonSecretLetters.splice(randomIndex, 1);
-        }
-
-        set({
-          disabledLetters: [...disabledLetters, ...lettersToDisable],
-          powerupAvailable: false,
-        });
       },
 
       // Close congrats modal
@@ -511,6 +567,8 @@ const useGameStore = create<GameState>()(
         gameDate: state.gameDate,
         attempts: state.attempts,
         showHowToPlay: state.showHowToPlay,
+        showCongrats: state.showCongrats,
+        isGameWon: state.isGameWon,
       }),
     }
   )

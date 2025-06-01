@@ -11,7 +11,7 @@ const HowToPlayModal: React.FC = () => {
       <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
         <h2 className="text-2xl font-bold text-indigo-700 mb-4">How to Play</h2>
 
-        <div className="space-y-4 text-gray-700">
+        <div className="space-y-4 text-gray-600">
           <p>
             Welcome to{" "}
             <span className="font-bold text-orange-500">Frantic Five</span>!
@@ -36,6 +36,24 @@ const HowToPlayModal: React.FC = () => {
                 </b>{" "}
                 either the top or bottom word, narrowing your range.
               </li>
+              <li>
+                Letters in your guesses will be highlighted:
+                <ul className="list-disc list-inside ml-4 mt-2 space-y-1">
+                  <li>
+                    <span className="inline-block w-4 h-4 bg-green-500 rounded-sm mr-1"></span>
+                    <span className="text-green-600 font-medium">Green</span>:
+                    Letter is in the correct position
+                  </li>
+                  <li>
+                    <span className="inline-block w-4 h-4 bg-yellow-500 rounded-sm mr-1"></span>
+                    <span className="text-yellow-600 font-medium">Yellow</span>:
+                    Letter is in the wrong position
+                  </li>
+                </ul>
+              </li>
+              <li>
+                You have <b>5</b> attempts to find the secret word.
+              </li>
             </ol>
           </div>
 
@@ -52,7 +70,7 @@ const HowToPlayModal: React.FC = () => {
 
         <button
           onClick={closeHowToPlayModal}
-          className="mt-6 w-full py-2 px-4 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
+          className="mt-6 w-full py-2 px-4 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors cursor-pointer"
         >
           Got it!
         </button>
