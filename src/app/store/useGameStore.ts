@@ -13,6 +13,7 @@ interface GameState {
   invalidWord: boolean;
   attempts: number;
   showCongrats: boolean;
+  showHowToPlay: boolean;
   disabledLetters: string[];
   powerupAvailable: boolean;
   isLoading: boolean;
@@ -31,6 +32,7 @@ interface GameState {
   handleSubmit: () => Promise<void>;
   handlePowerup: () => void;
   closeCongratsModal: () => void;
+  closeHowToPlayModal: () => void;
   clearError: () => void;
   setWordList: (words: string[]) => void;
   clearFeedback: () => void;
@@ -49,6 +51,7 @@ const useGameStore = create<GameState>()(
       invalidWord: false,
       attempts: 0,
       showCongrats: false,
+      showHowToPlay: true,
       disabledLetters: [],
       powerupAvailable: true,
       isLoading: true,
@@ -496,6 +499,9 @@ const useGameStore = create<GameState>()(
 
       // Close congrats modal
       closeCongratsModal: () => set({ showCongrats: false }),
+
+      // Close how to play modal
+      closeHowToPlayModal: () => set({ showHowToPlay: false }),
     }),
     {
       name: "word-finder-storage", // Local storage key
@@ -504,6 +510,7 @@ const useGameStore = create<GameState>()(
         todayCompleted: state.todayCompleted,
         gameDate: state.gameDate,
         attempts: state.attempts,
+        showHowToPlay: state.showHowToPlay,
       }),
     }
   )
