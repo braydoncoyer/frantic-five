@@ -65,7 +65,11 @@ const useGameStore = create<GameState>()(
       updatedBottomWord: false,
 
       // Set the word list
-      setWordList: (words: string[]) => set({ wordList: words }),
+      setWordList: (words: string[]) => {
+        console.log(`Setting word list with ${words.length} words`);
+        console.log('Sample words:', words.slice(0, 5));
+        set({ wordList: words });
+      },
 
       // Clear error
       clearError: () => set({ error: null }),
@@ -447,6 +451,9 @@ const useGameStore = create<GameState>()(
         // Check if all positions are filled
         if (get().getFilledPositions() === 5) {
           const word = currentGuess.join("").toLowerCase();
+          console.log('Validating word:', word);
+          console.log('Word list length:', wordList.length);
+          console.log('Word exists in list:', wordList.includes(word));
 
           if (!wordList.includes(word)) {
             // Word not in dictionary

@@ -19,6 +19,7 @@ const GameBoard: React.FC = () => {
   // Track which row should animate
   const [animateTop, setAnimateTop] = useState(false);
   const [animateBottom, setAnimateBottom] = useState(false);
+  const [shakeCenter, setShakeCenter] = useState(false);
 
   // Keep track of previous words
   const prevTopWord = useRef(topWord);
@@ -40,6 +41,14 @@ const GameBoard: React.FC = () => {
       prevBottomWord.current = bottomWord;
     }
   }, [bottomWord]);
+
+  // Trigger shake animation when there's an error
+  useEffect(() => {
+    if (invalidWord || feedbackMessage) {
+      setShakeCenter(true);
+      setTimeout(() => setShakeCenter(false), 500);
+    }
+  }, [invalidWord, feedbackMessage]);
 
   const getLetterColor = (
     letter: string,
@@ -110,7 +119,7 @@ const GameBoard: React.FC = () => {
     index: number;
   }) => {
     return (
-      <div
+      <motion.div
         key={`center-${index}`}
         className={`w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 border-2 ${
           invalidWord
@@ -124,9 +133,21 @@ const GameBoard: React.FC = () => {
             removeLetter(index);
           }
         }}
+        animate={
+          shakeCenter
+            ? {
+                x: [0, -8, 8, -8, 8, -4, 4, 0],
+                transition: {
+                  duration: 0.7,
+                  ease: [0.36, 0, 0.66, -0.56],
+                  times: [0, 0.2, 0.4, 0.6, 0.8, 0.9, 0.95, 1],
+                },
+              }
+            : {}
+        }
       >
         {letter}
-      </div>
+      </motion.div>
     );
   };
 

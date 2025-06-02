@@ -27,15 +27,15 @@ const Keyboard: React.FC = () => {
         >
           {rowIndex === 2 && (
             <button
-              onClick={handleBackspace}
-              disabled={getFilledPositions() === 0 || isGameWon}
+              onClick={handleSubmit}
+              disabled={getFilledPositions() !== 5 || isGameWon}
               className={`w-10 sm:w-16 h-8 sm:h-14 rounded font-semibold flex-shrink-0 flex-grow-0 cursor-pointer ${
-                getFilledPositions() > 0 && !isGameWon
-                  ? "bg-red-500 text-white hover:bg-red-600"
+                getFilledPositions() === 5 && !isGameWon
+                  ? "bg-green-500 text-white hover:bg-green-600"
                   : "bg-gray-300 text-gray-500"
               } transition-colors`}
             >
-              ←
+              ✓
             </button>
           )}
 
@@ -62,15 +62,15 @@ const Keyboard: React.FC = () => {
 
           {rowIndex === 2 && (
             <button
-              onClick={handleSubmit}
-              disabled={getFilledPositions() !== 5 || isGameWon}
+              onClick={handleBackspace}
+              disabled={getFilledPositions() === 0 || isGameWon}
               className={`w-10 sm:w-16 h-8 sm:h-14 rounded font-semibold flex-shrink-0 flex-grow-0 cursor-pointer ${
-                getFilledPositions() === 5 && !isGameWon
-                  ? "bg-green-500 text-white hover:bg-green-600"
+                getFilledPositions() > 0 && !isGameWon
+                  ? "bg-red-500 text-white hover:bg-red-600"
                   : "bg-gray-300 text-gray-500"
               } transition-colors`}
             >
-              ✓
+              ←
             </button>
           )}
         </div>
