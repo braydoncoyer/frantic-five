@@ -12,17 +12,20 @@ export default async function Home() {
   try {
     words = await getAllWords();
     console.log(`Fetched ${words.length} words from Supabase`);
+    console.log("Sample Supabase words:", words.slice(0, 5));
   } catch (error) {
     console.error("Error fetching words from Supabase:", error);
     // Fallback to local word list if Supabase fails
     words = wordList;
     console.log(`Using local word list with ${words.length} words`);
+    console.log("Sample local words:", words.slice(0, 5));
   }
 
   // If no words from Supabase, use the local list
   if (words.length === 0) {
     words = wordList;
     console.log(`Using local word list with ${words.length} words`);
+    console.log("Sample local words:", words.slice(0, 5));
   }
 
   return (

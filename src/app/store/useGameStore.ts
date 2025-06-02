@@ -34,6 +34,7 @@ interface GameState {
   handleSubmit: () => Promise<void>;
   closeCongratsModal: () => void;
   closeHowToPlayModal: () => void;
+  openHowToPlayModal: () => void;
   clearError: () => void;
   setWordList: (words: string[]) => void;
   clearFeedback: () => void;
@@ -65,7 +66,11 @@ const useGameStore = create<GameState>()(
       updatedBottomWord: false,
 
       // Set the word list
-      setWordList: (words: string[]) => set({ wordList: words }),
+      setWordList: (words: string[]) => {
+        console.log(`Setting word list with ${words.length} words`);
+        console.log('Sample words:', words.slice(0, 5));
+        set({ wordList: words });
+      },
 
       // Clear error
       clearError: () => set({ error: null }),
@@ -447,6 +452,9 @@ const useGameStore = create<GameState>()(
         // Check if all positions are filled
         if (get().getFilledPositions() === 5) {
           const word = currentGuess.join("").toLowerCase();
+          console.log('Validating word:', word);
+          console.log('Word list length:', wordList.length);
+          console.log('Word exists in list:', wordList.includes(word));
 
           if (!wordList.includes(word)) {
             // Word not in dictionary
@@ -508,17 +516,6 @@ const useGameStore = create<GameState>()(
               currentGuess: secretWord.split("")
             });
           } else {
-            // Check if we've reached the guess limit
-            if (newAttempts >= 5) {
-              set({
-                isGameOver: true,
-                showCongrats: true,
-                todayCompleted: true,
-                currentGuess: ["", "", "", "", ""],
-              });
-              return;
-            }
-
             // Determine if guess goes above or below the secret word
             if (word < secretWord.toLowerCase()) {
               set({
@@ -558,6 +555,9 @@ const useGameStore = create<GameState>()(
 
       // Close how to play modal
       closeHowToPlayModal: () => set({ showHowToPlay: false }),
+
+      // Open how to play modal
+      openHowToPlayModal: () => set({ showHowToPlay: true }),
     }),
     {
       name: "word-finder-storage", // Local storage key
