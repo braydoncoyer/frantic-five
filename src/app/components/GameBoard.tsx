@@ -65,9 +65,9 @@ const GameBoard: React.FC = () => {
     const currentLetter = letter.toLowerCase();
 
     if (currentLetter === secretLetters[index]) {
-      return "bg-green-500 text-white";
+      return "bg-emerald-500 text-white";
     } else if (secretLetters.includes(currentLetter)) {
-      return "bg-yellow-500 text-white";
+      return "bg-orange-400 text-white";
     }
     return "bg-white";
   };
@@ -88,7 +88,7 @@ const GameBoard: React.FC = () => {
     return (
       <motion.div
         key={`${isTopWord ? "top" : "bottom"}-${index}`}
-        className={`w-12 h-12 sm:w-13 sm:h-13 lg:w-16 lg:h-16 border-2 border-indigo-100 rounded-md m-0.5 sm:m-1 flex items-center justify-center text-lg sm:text-xl font-semibold shadow-md uppercase aspect-square ${getLetterColor(
+        className={`flex-1 min-w-[60px] sm:min-w-[80px] border-2 border-indigo-100 rounded-lg flex items-center justify-center text-2xl sm:text-3xl font-semibold shadow-md uppercase aspect-square ${getLetterColor(
           letter,
           index,
           isTopWord
@@ -121,13 +121,13 @@ const GameBoard: React.FC = () => {
     return (
       <motion.div
         key={`center-${index}`}
-        className={`w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 border-2 ${
+        className={`flex-1 min-w-[60px] sm:min-w-[80px] border-2 ${
           invalidWord
             ? "border-red-500 bg-red-100"
             : letter
             ? "border-orange-400 bg-white hover:bg-indigo-100 cursor-pointer"
-            : "border-gray-300 bg-gray-50"
-        } rounded-md mx-1 sm:mx-2 flex items-center justify-center text-xl sm:text-2xl lg:text-2xl font-semibold shadow-md uppercase aspect-square`}
+            : "border-gray-300 bg-white"
+        } rounded-lg flex items-center justify-center text-2xl sm:text-3xl font-semibold shadow-md uppercase aspect-square`}
         onClick={() => {
           if (letter && !isGameWon) {
             removeLetter(index);
@@ -152,9 +152,9 @@ const GameBoard: React.FC = () => {
   };
 
   return (
-    <div className="mb-8 w-full max-w-[95vw] sm:max-w-md text-slate-900 font-sans">
+    <div className="mb-8 w-full max-w-3xl mx-auto text-slate-900 font-sans">
       {/* Top word */}
-      <div className="flex justify-center mb-4 sm:mb-8">
+      <div className="flex gap-3 sm:gap-4 w-full mb-6 sm:mb-8">
         {topWord.split("").map((letter, index) => (
           <LetterBox
             key={`top-${index}`}
@@ -166,7 +166,7 @@ const GameBoard: React.FC = () => {
       </div>
 
       {/* Current guess */}
-      <div className="flex justify-center mb-4 sm:mb-8">
+      <div className="flex gap-3 sm:gap-4 w-full mb-6 sm:mb-8">
         {currentGuess.map((letter, index) => (
           <CenterLetterBox
             key={`center-${index}`}
@@ -177,7 +177,7 @@ const GameBoard: React.FC = () => {
       </div>
 
       {/* Bottom word */}
-      <div className="flex justify-center">
+      <div className="flex gap-3 sm:gap-4 w-full">
         {bottomWord.split("").map((letter, index) => (
           <LetterBox
             key={`bottom-${index}`}

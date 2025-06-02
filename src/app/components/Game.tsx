@@ -6,6 +6,7 @@ import GameBoard from "./GameBoard";
 import Keyboard from "./Keyboard";
 import CongratsModal from "./CongratsModal";
 import HowToPlayModal from "./HowToPlayModal";
+import HelpButton from "./HelpButton";
 import Image from "next/image";
 
 const Game: React.FC = () => {
@@ -117,9 +118,9 @@ const Game: React.FC = () => {
             width={374}
             height={183}
             src="/frantic_five_logo.svg"
-            className="aspect-video pointer-events-none"
+            className="w-[280px] sm:w-[374px] aspect-video pointer-events-none"
           />
-          <div className="mt-10">
+          <div className="mt-6 sm:mt-10">
             <GameBoard />
           </div>
           <p className="text-gray-600">Attempts: {attempts}</p>
@@ -131,6 +132,7 @@ const Game: React.FC = () => {
       </div>
       <CongratsModal />
       <HowToPlayModal />
+      <HelpButton />
 
       {/* Debug info - remove in production */}
     </div>

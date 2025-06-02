@@ -34,6 +34,7 @@ interface GameState {
   handleSubmit: () => Promise<void>;
   closeCongratsModal: () => void;
   closeHowToPlayModal: () => void;
+  openHowToPlayModal: () => void;
   clearError: () => void;
   setWordList: (words: string[]) => void;
   clearFeedback: () => void;
@@ -515,17 +516,6 @@ const useGameStore = create<GameState>()(
               currentGuess: secretWord.split("")
             });
           } else {
-            // Check if we've reached the guess limit
-            if (newAttempts >= 5) {
-              set({
-                isGameOver: true,
-                showCongrats: true,
-                todayCompleted: true,
-                currentGuess: ["", "", "", "", ""],
-              });
-              return;
-            }
-
             // Determine if guess goes above or below the secret word
             if (word < secretWord.toLowerCase()) {
               set({
@@ -565,6 +555,9 @@ const useGameStore = create<GameState>()(
 
       // Close how to play modal
       closeHowToPlayModal: () => set({ showHowToPlay: false }),
+
+      // Open how to play modal
+      openHowToPlayModal: () => set({ showHowToPlay: true }),
     }),
     {
       name: "word-finder-storage", // Local storage key
