@@ -558,15 +558,21 @@ const useGameStore = create<GameState>()(
     }),
     {
       name: "word-finder-storage", // Local storage key
-      partialize: (state) => ({
-        // Only persist these fields
-        todayCompleted: state.todayCompleted,
-        gameDate: state.gameDate,
-        attempts: state.attempts,
-        showHowToPlay: state.showHowToPlay,
-        showCongrats: state.showCongrats,
-        isGameWon: state.isGameWon,
-      }),
+      partialize: (state) => {
+        // Only persist these fields if it's the current day
+        const currentDate = new Date().toISOString().split("T")[0];
+        if (state.gameDate !== currentDate) {
+          return {}; // Don't persist anything if it's a new day
+        }
+        return {
+          todayCompleted: state.todayCompleted,
+          gameDate: state.gameDate,
+          attempts: state.attempts,
+          showHowToPlay: state.showHowToPlay,
+          showCongrats: state.showCongrats,
+          isGameWon: state.isGameWon,
+        };
+      },
     }
   )
 );

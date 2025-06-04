@@ -50,6 +50,67 @@ const GameBoard: React.FC = () => {
     }
   }, [invalidWord, feedbackMessage]);
 
+  const [topWordColors, setTopWordColors] = useState<string[]>([]);
+  const [bottomWordColors, setBottomWordColors] = useState<string[]>([]);
+
+  // Update letter colors when words change
+  useEffect(() => {
+    if (secretWord && topWord) {
+      const colors = calculateLetterColors(topWord, secretWord);
+      setTopWordColors(colors);
+    }
+  }, [topWord, secretWord]);
+
+  useEffect(() => {
+    if (secretWord && bottomWord) {
+      const colors = calculateLetterColors(bottomWord, secretWord);
+      setBottomWordColors(colors);
+    }
+  }, [bottomWord, secretWord]);
+
+  // Function to calculate letter colors for a word
+  const calculateLetterColors = (word: string, secret: string): string[] => {
+    const wordLetters = word.toLowerCase().split("");
+    const secretLetters = secret.toLowerCase().split("");
+    const colors = new Array(wordLetters.length).fill("bg-white");
+
+    // Create a map to track letter frequencies in the secret word
+    const letterFrequencies = new Map<string, number>();
+    secretLetters.forEach((letter) => {
+      letterFrequencies.set(letter, (letterFrequencies.get(letter) || 0) + 1);
+    });
+
+    // Create a map to track used letters
+    const usedLetters = new Map<string, number>();
+    secretLetters.forEach((letter) => {
+      usedLetters.set(letter, 0);
+    });
+
+    // First pass: mark correct positions (green)
+    wordLetters.forEach((letter, i) => {
+      if (letter === secretLetters[i]) {
+        colors[i] = "bg-emerald-500 text-white";
+        usedLetters.set(letter, (usedLetters.get(letter) || 0) + 1);
+      }
+    });
+
+    // Second pass: mark wrong positions (orange)
+    wordLetters.forEach((letter, i) => {
+      if (colors[i] === "bg-white") {
+        // Only check letters that aren't already green
+        const usedCount = usedLetters.get(letter) || 0;
+        const totalCount = letterFrequencies.get(letter) || 0;
+
+        if (usedCount < totalCount) {
+          colors[i] = "bg-orange-400 text-white";
+          usedLetters.set(letter, usedCount + 1);
+        }
+      }
+    });
+
+    return colors;
+  };
+
   const getLetterColor = (
     letter: string,
     index: number,
@@ -61,15 +122,9 @@ const GameBoard: React.FC = () => {
     if (isTopWord && !updatedTopWord) return "bg-white";
     if (!isTopWord && !updatedBottomWord) return "bg-white";
 
-    const secretLetters = secretWord.toLowerCase().split("");
-    const currentLetter = letter.toLowerCase();
-
-    if (currentLetter === secretLetters[index]) {
-      return "bg-emerald-500 text-white";
-    } else if (secretLetters.includes(currentLetter)) {
-      return "bg-orange-400 text-white";
-    }
-    return "bg-white";
+    // Get the color from the stored colors
+    const colors = isTopWord ? topWordColors : bottomWordColors;
+    return colors[index] || "bg-white";
   };
 
   const LetterBox = ({
