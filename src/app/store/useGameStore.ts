@@ -1,7 +1,8 @@
 // store/useGameStore.ts
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { getTodaysWord, getRandomWord, getAllWords, getInitialWords } from "@/app/actions";
+import { getTodaysWord, getRandomWord, getInitialWords, getAllWords } from "@/app/actions";
+import { wordList as localWordList } from "@/utils/wordList";
 
 interface GameState {
   // Game state
@@ -89,18 +90,15 @@ const useGameStore = create<GameState>()(
         });
 
         try {
-          // Get all words for validation if we don't have them yet
-          let wordList = get().wordList;
-          if (wordList.length === 0) {
-            console.log("Fetching all words...");
-            const allWords = await getAllWords();
-            console.log(`Fetched ${allWords.length} words`);
+          // Get words from Supabase
+          console.log("Fetching words from Supabase...");
+          const supabaseWords = await getAllWords();
+          console.log(`Fetched ${supabaseWords.length} words from Supabase`);
 
-            if (allWords.length > 0) {
-              wordList = allWords;
-              set({ wordList });
-            }
-          }
+          // Combine Supabase words with local word list, removing duplicates
+          const combinedWordList = [...new Set([...supabaseWords, ...localWordList])].sort();
+          console.log(`Combined word list has ${combinedWordList.length} unique words`);
+          set({ wordList: combinedWordList });
 
           // Get today's date (or yesterday's if game already completed)
           const currentDate = new Date().toISOString().split("T")[0];
@@ -145,7 +143,7 @@ const useGameStore = create<GameState>()(
             } else {
               // Fallback to the old method of selecting initial words
               console.log("Falling back to local initial word selection");
-              setupGame(word || "", currentDate, wordList);
+              setupGame(word || "", currentDate, localWordList);
             }
             return;
           }
@@ -196,7 +194,7 @@ const useGameStore = create<GameState>()(
 
             // Use fallback word
             console.log("Using fallback random word:", fallbackWord);
-            setupGame(fallbackWord, currentDate, wordList);
+            setupGame(fallbackWord, currentDate, localWordList);
             return;
           }
 
@@ -217,7 +215,7 @@ const useGameStore = create<GameState>()(
           } else {
             // Fallback to the old method of selecting initial words
             console.log("Falling back to local initial word selection");
-            setupGame(word, currentDate, wordList);
+            setupGame(word, currentDate, localWordList);
           }
         } catch (error) {
           console.error("Error initializing game:", error);

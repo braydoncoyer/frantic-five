@@ -1,4 +1,4 @@
-const wordList: string[] = [
+export const wordList: string[] = [
   "aahed",
   "aalii",
   "aargh",
