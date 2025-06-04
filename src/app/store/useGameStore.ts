@@ -69,7 +69,6 @@ const useGameStore = create<GameState>()(
       // Set the word list
       setWordList: (words: string[]) => {
         console.log(`Setting word list with ${words.length} words`);
-        console.log('Sample words:', words.slice(0, 5));
         set({ wordList: words });
       },
 
