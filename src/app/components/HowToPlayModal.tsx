@@ -22,7 +22,6 @@ const HowToPlayModal: React.FC = () => {
           <div>
             <h3 className="font-semibold text-indigo-600 mb-2">The Rules:</h3>
             <ol className="list-decimal list-inside space-y-2">
-              <li>Each guess must be a valid 5-letter word.</li>
               <li>
                 The secret word comes{" "}
                 <b>
@@ -30,7 +29,7 @@ const HowToPlayModal: React.FC = () => {
                 </b>{" "}
                 between the top and bottom words.
               </li>
-              <li>Use the keyboard to make a guess, then press Enter.</li>
+              <li>Each guess must be a valid 5-letter word.</li>
               <li>
                 Wrong guesses will{" "}
                 <b>
@@ -54,19 +53,9 @@ const HowToPlayModal: React.FC = () => {
                 </ul>
               </li>
               <li>
-                You have <b>5</b> attempts to find the secret word.
+                A new word is available every day at midnight Central Time.
               </li>
             </ol>
-          </div>
-
-          <div>
-            <h3 className="font-semibold text-indigo-600 mb-2">
-              Daily Challenge:
-            </h3>
-            <p>
-              A new word is available every day at midnight Central Time. Come
-              back daily to keep your streak going!
-            </p>
           </div>
         </div>
 

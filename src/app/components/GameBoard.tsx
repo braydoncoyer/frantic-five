@@ -127,6 +127,17 @@ const GameBoard: React.FC = () => {
     return colors[index] || "bg-white";
   };
 
+  // Helper to determine shadow color based on tile state
+  const getTileShadowColor = (colorClass: string) => {
+    if (colorClass.includes("bg-emerald-500")) {
+      return "shadow-[0_5px_0_0_#006045] sm:shadow-[0_8px_0_0_#006045]"; // Correct position
+    }
+    if (colorClass.includes("bg-orange-400")) {
+      return "shadow-[0_5px_0_0_#9F2D00] sm:shadow-[0_8px_0_0_#9F2D00]"; // Wrong position but in puzzle
+    }
+    return "shadow-[0_5px_0_0_#D9D9D9] sm:shadow-[0_8px_0_0_#D9D9D9]"; // Regular
+  };
+
   const LetterBox = ({
     letter,
     index,
@@ -143,11 +154,9 @@ const GameBoard: React.FC = () => {
     return (
       <motion.div
         key={`${isTopWord ? "top" : "bottom"}-${index}`}
-        className={`flex-1 min-w-[60px] sm:min-w-[80px] border-2 border-indigo-100 rounded-lg flex items-center justify-center text-2xl sm:text-3xl font-semibold shadow-md uppercase aspect-square ${getLetterColor(
-          letter,
-          index,
-          isTopWord
-        )}`}
+        className={`relative flex-1 min-w-[60px] h-[60px] sm:min-w-[112px] sm:h-[104px] rounded-xl sm:rounded-2xl flex items-center justify-center text-5xl sm:text-7xl font-['Helvetica_Neue'] font-bold uppercase text-[#414141] aspect-square ${getTileShadowColor(
+          getLetterColor(letter, index, isTopWord)
+        )} ${getLetterColor(letter, index, isTopWord)}`}
         animate={
           shouldAnimate
             ? {
@@ -161,7 +170,7 @@ const GameBoard: React.FC = () => {
             : {}
         }
       >
-        {letter}
+        <p className="m-0 z-10">{letter}</p>
       </motion.div>
     );
   };
@@ -176,13 +185,14 @@ const GameBoard: React.FC = () => {
     return (
       <motion.div
         key={`center-${index}`}
-        className={`flex-1 min-w-[60px] sm:min-w-[80px] border-2 ${
-          invalidWord
-            ? "border-red-500 bg-red-100"
-            : letter
-            ? "border-orange-400 bg-white hover:bg-indigo-100 cursor-pointer"
-            : "border-gray-300 bg-white"
-        } rounded-lg flex items-center justify-center text-2xl sm:text-3xl font-semibold shadow-md uppercase aspect-square`}
+        className={`relative flex-1 cursor-pointer ${
+          letter
+            ? "w-[60px] sm:w-[112px] min-w-[60px] sm:min-w-[112px] max-w-[60px] sm:max-w-[112px] h-[60px] sm:h-[104px] min-h-[60px] sm:min-h-[104px] max-h-[60px] sm:max-h-[104px] bg-white rounded-xl sm:rounded-2xl flex items-center justify-center text-5xl sm:text-7xl font-['Helvetica_Neue'] font-bold uppercase text-[#414141] hover:cursor-pointer" +
+              getTileShadowColor(getLetterColor(letter, index, false))
+            : `w-[60px] sm:w-[112px] min-w-[60px] sm:min-w-[112px] max-w-[60px] sm:max-w-[112px] h-[60px] sm:h-[112px] min-h-[60px] sm:min-h-[112px] max-h-[60px] sm:max-h-[112px] border-2 border-dashed border-slate-500 ${
+                invalidWord ? "border-red-500" : ""
+              } rounded-xl sm:rounded-2xl flex items-center justify-center text-5xl sm:text-7xl font-['Helvetica_Neue'] font-bold uppercase text-[#414141]`
+        }`}
         onClick={() => {
           if (letter && !isGameWon) {
             removeLetter(index);
@@ -201,7 +211,7 @@ const GameBoard: React.FC = () => {
             : {}
         }
       >
-        {letter}
+        <p className="m-0 z-10">{letter}</p>
       </motion.div>
     );
   };

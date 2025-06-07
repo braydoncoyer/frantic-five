@@ -7,7 +7,6 @@ import Keyboard from "./Keyboard";
 import CongratsModal from "./CongratsModal";
 import HowToPlayModal from "./HowToPlayModal";
 import HelpButton from "./HelpButton";
-import Image from "next/image";
 
 const Game: React.FC = () => {
   const {
@@ -110,31 +109,23 @@ const Game: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col items-center justify-between min-h-screen bg-slate-100 p-4">
+    <div className="flex flex-col items-center justify-around min-h-screen bg-slate-900 p-4">
+      <div className="flex justify-between w-full text-xl sm:text-3xl text-white/30 font-bold max-w-[625px]">
+        <h2>Frantic Five</h2>
+        <h3>Attempts: {attempts}</h3>
+      </div>
       {!todayCompleted && (
         <div className="flex flex-col items-center">
-          <Image
-            alt="Frantic Five"
-            width={374}
-            height={183}
-            src="/frantic_five_logo.svg"
-            className="w-[280px] sm:w-[374px] aspect-video pointer-events-none"
-          />
-          <div className="mt-6 sm:mt-10">
+          <div>
             <GameBoard />
           </div>
-          <p className="text-gray-600">Attempts: {attempts}</p>
         </div>
       )}
 
-      <div className="mb-2 sm:mb-4">
-        <Keyboard />
-      </div>
+      <Keyboard />
       <CongratsModal />
       <HowToPlayModal />
       <HelpButton />
-
-      {/* Debug info - remove in production */}
     </div>
   );
 };
