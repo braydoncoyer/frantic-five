@@ -7,7 +7,6 @@ import Keyboard from "./Keyboard";
 import CongratsModal from "./CongratsModal";
 import HowToPlayModal from "./HowToPlayModal";
 import HelpButton from "./HelpButton";
-import Image from "next/image";
 
 const Game: React.FC = () => {
   const {
