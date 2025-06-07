@@ -22,17 +22,17 @@ const Keyboard: React.FC = () => {
       {keyboard.map((row, rowIndex) => (
         <div
           key={`row-${rowIndex}`}
-          className="flex justify-center mb-2 sm:mb-3 gap-1 sm:gap-2"
+          className="flex justify-center mb-8 gap-2.5 sm:mb-7 sm:gap-4"
         >
           {rowIndex === 2 && (
             <button
               onClick={handleSubmit}
               disabled={getFilledPositions() !== 5 || isGameWon}
-              className={`w-10 sm:w-16 h-8 sm:h-14 rounded font-semibold flex-shrink-0 flex-grow-0 ${
+              className={`w-[29px] sm:w-[56px] h-[44px] sm:h-[78px] rounded-md font-semibold flex-shrink-0 flex-grow-0 ${
                 getFilledPositions() === 5 && !isGameWon
-                  ? "bg-green-500 text-white hover:bg-green-600 cursor-pointer"
-                  : "bg-gray-300 text-gray-500"
-              } transition-colors`}
+                  ? "bg-emerald-500 text-white hover:bg-green-600 cursor-pointer shadow-[0_4px_0_0_#006045] sm:shadow-[0_8px_0_0_#006045]"
+                  : "bg-gray-300 text-gray-500 shadow-[0_4px_0_0_#B6B6B6] sm:shadow-[0_8px_0_0_#B6B6B6]"
+              } transition-colors text-[32px]`}
             >
               ✓
             </button>
@@ -43,13 +43,13 @@ const Keyboard: React.FC = () => {
               key={key}
               onClick={() => handleKeyPress(key)}
               disabled={getFilledPositions() >= 5 || isGameWon}
-              className={`w-7 sm:w-11 h-8 sm:h-14 rounded font-semibold flex-shrink-0 flex-grow-0 ${
+              className={`w-[29px] sm:w-[56px] h-[44px] sm:h-[78px] rounded-md font-semibold flex-shrink-0 flex-grow-0 shadow-[0_4px_0_0_#D9D9D9] sm:shadow-[0_8px_0_0_#D9D9D9] ${
                 getFilledPositions() < 5 && !isGameWon
-                  ? "bg-indigo-100 text-indigo-800 hover:bg-indigo-800 hover:text-indigo-100 cursor-pointer"
+                  ? "bg-white text-[#414141] hover:bg-slate-100 cursor-pointer"
                   : "bg-gray-300 text-gray-500"
-              } transition-colors uppercase text-xs sm:text-base`}
+              } transition-colors uppercase`}
             >
-              {key}
+              <span className="text-2xl sm:text-4xl">{key}</span>
             </button>
           ))}
 
@@ -57,11 +57,11 @@ const Keyboard: React.FC = () => {
             <button
               onClick={handleBackspace}
               disabled={getFilledPositions() === 0 || isGameWon}
-              className={`w-10 sm:w-16 h-8 sm:h-14 rounded font-semibold flex-shrink-0 flex-grow-0 ${
+              className={`w-[29px] sm:w-[56px] h-[44px] sm:h-[78px] rounded-md font-semibold flex-shrink-0 flex-grow-0 ${
                 getFilledPositions() > 0 && !isGameWon
-                  ? "bg-red-500 text-white hover:bg-red-600 cursor-pointer"
-                  : "bg-gray-300 text-gray-500"
-              } transition-colors`}
+                  ? "bg-red-500 text-white hover:bg-red-600 cursor-pointer shadow-[0_4px_0_0_#C70036] sm:shadow-[0_8px_0_0_#C70036]"
+                  : "bg-gray-300 text-gray-500 shadow-[0_4px_0_0_#B6B6B6] sm:shadow-[0_8px_0_0_#B6B6B6]"
+              } transition-colors text-[32px]`}
             >
               ←
             </button>
