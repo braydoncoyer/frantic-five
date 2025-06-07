@@ -110,16 +110,16 @@ const Game: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col items-center justify-between min-h-screen bg-slate-100 p-4">
+    <div className="flex flex-col items-center justify-between min-h-screen bg-slate-900 p-4">
       {!todayCompleted && (
         <div className="flex flex-col items-center">
-          <Image
+          {/* <Image
             alt="Frantic Five"
             width={374}
             height={183}
             src="/frantic_five_logo.svg"
             className="w-[280px] sm:w-[374px] aspect-video pointer-events-none"
-          />
+          /> */}
           <div className="mt-6 sm:mt-10">
             <GameBoard />
           </div>
