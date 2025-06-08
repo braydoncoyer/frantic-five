@@ -23,30 +23,17 @@ function getSupabaseClient(isAdminOperation = false) {
 // Simple function to get today's word from Supabase
 export async function getTodaysWord() {
   try {
-    // Create Supabase client - READ operation, but calls set_central_time_daily_word if needed
+    // Create Supabase client - READ operation, but calls create_daily_puzzle if needed
     const supabase = getSupabaseClient(false); // Start with anon for reads
     const adminSupabase = getSupabaseClient(true); // Admin client for mutations
+
+    // Get client's local date
+    const clientDate = new Date().toISOString().split("T")[0];
+    console.log("Client date:", clientDate);
 
     // Get timezone debug info
     const { data: tzDebugData } = await supabase.rpc("debug_all_timezone_info");
     console.log("Timezone debug info:", tzDebugData);
-
-    // Get current date in Central Time timezone (properly converted)
-    const { data: dateData, error: dateError } = await supabase.rpc(
-      "get_central_time_date"
-    );
-
-    if (dateError || !dateData) {
-      console.error("Error getting central time date:", dateError);
-      return {
-        word: null,
-        error: "Failed to get server date",
-        serverDate: null,
-        debugInfo: tzDebugData,
-      };
-    }
-
-    console.log("Server date (Central Time):", dateData);
 
     // Get all daily words for debugging
     const { data: allDailyWords } = await supabase
@@ -71,7 +58,7 @@ export async function getTodaysWord() {
         word:words!daily_words_word_id_fkey(word)
       `
       )
-      .eq("date", dateData)
+      .eq("date", clientDate)
       .single();
 
     if (error) {
@@ -82,14 +69,14 @@ export async function getTodaysWord() {
         console.log("No word found for today, trying to set it...");
         // USE ADMIN CLIENT for the mutation
         const { data: setWordResult, error: setWordError } =
-          await adminSupabase.rpc("set_central_time_daily_word");
+          await adminSupabase.rpc("create_daily_puzzle", { target_date: clientDate });
 
         if (setWordError) {
           console.error("Error setting daily word:", setWordError);
           return {
             word: null,
             error: "Could not set daily word: " + setWordError.message,
-            serverDate: dateData,
+            serverDate: clientDate,
             debugInfo: {
               tzInfo: tzDebugData,
               recentWords: allDailyWords,
@@ -116,7 +103,7 @@ export async function getTodaysWord() {
             word:words!daily_words_word_id_fkey(word)
           `
           )
-          .eq("date", dateData)
+          .eq("date", clientDate)
           .single();
 
         if (retryError || !retryData || !retryData.word) {
@@ -124,7 +111,7 @@ export async function getTodaysWord() {
           return {
             word: null,
             error: "Could not get word after setting",
-            serverDate: dateData,
+            serverDate: clientDate,
             debugInfo: {
               tzInfo: tzDebugData,
               recentWords: allDailyWords,
@@ -136,7 +123,7 @@ export async function getTodaysWord() {
         return {
           word: (retryData as unknown as RetryWordResponse).word.word,
           error: null,
-          serverDate: dateData,
+          serverDate: clientDate,
           debugInfo: {
             tzInfo: tzDebugData,
             recentWords: allDailyWords,
@@ -148,7 +135,7 @@ export async function getTodaysWord() {
       return {
         word: null,
         error: error.message,
-        serverDate: dateData,
+        serverDate: clientDate,
         debugInfo: {
           tzInfo: tzDebugData,
           recentWords: allDailyWords,
@@ -163,23 +150,10 @@ export async function getTodaysWord() {
       };
     };
 
-    if (!data || !data.word) {
-      console.error("No word found for today");
-      return {
-        word: null,
-        error: "No word found",
-        serverDate: dateData,
-        debugInfo: {
-          tzInfo: tzDebugData,
-          recentWords: allDailyWords,
-        },
-      };
-    }
-
     return {
       word: (data as unknown as DailyWordResponse).word.word,
       error: null,
-      serverDate: dateData,
+      serverDate: clientDate,
       debugInfo: {
         tzInfo: tzDebugData,
         recentWords: allDailyWords,
@@ -202,9 +176,8 @@ export async function getRandomWord() {
     // READ operation - use anon client
     const supabase = getSupabaseClient(false);
 
-    // Get current date from the server
-    const { data: dateData } = await supabase.rpc("get_central_time_date");
-    const serverDate = dateData || new Date().toISOString().split("T")[0];
+    // Get client's local date
+    const clientDate = new Date().toISOString().split("T")[0];
 
     // Get any random word
     const { data, error } = await supabase
@@ -216,10 +189,10 @@ export async function getRandomWord() {
 
     if (error || !data) {
       console.error("Error fetching random word:", error);
-      return { word: "table", error: error?.message, serverDate }; // Hardcoded fallback
+      return { word: "table", error: error?.message, serverDate: clientDate }; // Hardcoded fallback
     }
 
-    return { word: data.word, error: null, serverDate };
+    return { word: data.word, error: null, serverDate: clientDate };
   } catch (error) {
     console.error("Exception in getRandomWord:", error);
     return { word: "house", error: "Server error", serverDate: null }; // Hardcoded fallback
@@ -270,8 +243,11 @@ export async function setTodaysWord() {
     // MUTATION operation - use admin client
     const supabase = getSupabaseClient(true);
 
-    // Call the set_daily_word function
-    const { data, error } = await supabase.rpc("set_central_time_daily_word");
+    // Get client's local date
+    const clientDate = new Date().toISOString().split("T")[0];
+
+    // Call the create_daily_puzzle function with the client's date
+    const { data, error } = await supabase.rpc("create_daily_puzzle", { target_date: clientDate });
 
     if (error) {
       console.error("Error setting today's word:", error);
@@ -291,19 +267,9 @@ export async function getInitialWords() {
     // READ operation - use anon client
     const supabase = getSupabaseClient(false);
 
-    // Get current date in Central Time
-    const { data: dateData, error: dateError } = await supabase.rpc(
-      "get_central_time_date"
-    );
-
-    if (dateError || !dateData) {
-      console.error("Error getting central time date:", dateError);
-      return {
-        topWord: null,
-        bottomWord: null,
-        error: "Failed to get server date",
-      };
-    }
+    // Get client's local date
+    const clientDate = new Date().toISOString().split("T")[0];
+    console.log("Client date for initial words:", clientDate);
 
     // Get today's daily words with initial top and bottom words
     const { data, error } = await supabase
@@ -316,7 +282,7 @@ export async function getInitialWords() {
         initial_bottom_word:words!daily_words_initial_bottom_word_id_fkey(word)
       `
       )
-      .eq("date", dateData)
+      .eq("date", clientDate)
       .single();
 
     if (error) {

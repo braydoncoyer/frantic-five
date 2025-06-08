@@ -49,7 +49,7 @@ const GameClient: React.FC<GameClientProps> = ({
     }
 
     // Check if game was already completed today
-    const savedState = localStorage.getItem("word-finder-storage");
+    const savedState = localStorage.getItem("frantic-five-storage");
     let wasCompletedToday = false;
     let savedAttempts = 0;
     let wasGameWon = false;
@@ -227,7 +227,7 @@ const GameClient: React.FC<GameClientProps> = ({
             Come back tomorrow!
           </h2>
           <p className="text-gray-600">
-            New word available at midnight Central Time.
+            New word available at midnight your local time.
           </p>
           <div className="mt-4 text-center">
             <button

@@ -55,7 +55,7 @@ const useGameStore = create<GameState>()(
       invalidWord: false,
       attempts: 0,
       showCongrats: false,
-      showHowToPlay: true,
+      showHowToPlay: false,
       disabledLetters: [],
       isLoading: true,
       todayCompleted: false,
@@ -80,6 +80,13 @@ const useGameStore = create<GameState>()(
 
       // Initialize game
       initializeGame: async () => {
+        // Check if this is the user's first visit
+        const hasSeenHowToPlay = localStorage.getItem("has-seen-how-to-play");
+        if (!hasSeenHowToPlay) {
+          set({ showHowToPlay: true });
+          localStorage.setItem("has-seen-how-to-play", "true");
+        }
+
         set({ 
           isLoading: true, 
           error: null,
@@ -99,16 +106,9 @@ const useGameStore = create<GameState>()(
           console.log(`Combined word list has ${combinedWordList.length} unique words`);
           set({ wordList: combinedWordList });
 
-          // Get today's date (or yesterday's if game already completed)
+          // Get today's date from client
           const currentDate = new Date().toISOString().split("T")[0];
           const { gameDate: storedDate, todayCompleted } = get();
-
-          // Get today's word and initial words from the server
-          console.log("Fetching today's word and initial words...");
-          const [{ word, error }, { topWord, bottomWord }] = await Promise.all([
-            getTodaysWord(),
-            getInitialWords()
-          ]);
 
           // If it's a new day, reset all game state
           if (storedDate !== currentDate) {
@@ -127,24 +127,30 @@ const useGameStore = create<GameState>()(
               disabledLetters: [],
               gameDate: currentDate
             });
+          }
+
+          // Get today's word and initial words from the server
+          console.log("Fetching today's word and initial words...");
+          const [{ word, error }, { topWord, bottomWord }] = await Promise.all([
+            getTodaysWord(),
+            getInitialWords()
+          ]);
             
-            // If we have initial words from Supabase, use them
-            if (topWord && bottomWord) {
-              console.log("Using initial words from Supabase:", { topWord, bottomWord });
-              setupGameWithInitialWords(word || "", topWord, bottomWord, currentDate);
-              // Save initial words to local storage (excluding secret word)
-              localStorage.setItem(`frantic-five-words-${currentDate}`, JSON.stringify({
-                topWord,
-                bottomWord,
-                updatedTopWord: false,
-                updatedBottomWord: false
-              }));
-            } else {
-              // Fallback to the old method of selecting initial words
-              console.log("Falling back to local initial word selection");
-              setupGame(word || "", currentDate, localWordList);
-            }
-            return;
+          // If we have initial words from Supabase, use them
+          if (topWord && bottomWord) {
+            console.log("Using initial words from Supabase:", { topWord, bottomWord });
+            setupGameWithInitialWords(word || "", topWord, bottomWord, currentDate);
+            // Save initial words to local storage (excluding secret word)
+            localStorage.setItem(`frantic-five-words-${currentDate}`, JSON.stringify({
+              topWord,
+              bottomWord,
+              updatedTopWord: false,
+              updatedBottomWord: false
+            }));
+          } else {
+            // Fallback to the old method of selecting initial words
+            console.log("Falling back to local initial word selection");
+            setupGame(word || "", currentDate, localWordList);
           }
 
           // If game already completed for today, just restore state
@@ -557,21 +563,60 @@ const useGameStore = create<GameState>()(
       openHowToPlayModal: () => set({ showHowToPlay: true }),
     }),
     {
-      name: "word-finder-storage", // Local storage key
+      name: "frantic-five-storage", // Local storage key
       partialize: (state) => {
-        // Only persist these fields if it's the current day
+        // Check if it's a new day by comparing with current date
         const currentDate = new Date().toISOString().split("T")[0];
+        
+        // If it's a new day, clear the storage
         if (state.gameDate !== currentDate) {
-          return {}; // Don't persist anything if it's a new day
+          // Clear the storage by returning an empty object
+          localStorage.removeItem("frantic-five-storage");
+          return {};
         }
+        
+        // Otherwise, persist the current state
         return {
           todayCompleted: state.todayCompleted,
           gameDate: state.gameDate,
           attempts: state.attempts,
-          showHowToPlay: state.showHowToPlay,
           showCongrats: state.showCongrats,
           isGameWon: state.isGameWon,
         };
+      },
+      // Add version to force clear on new day
+      version: 1,
+      onRehydrateStorage: () => (state) => {
+        // Check if it's a new day when rehydrating
+        if (state) {
+          const currentDate = new Date().toISOString().split("T")[0];
+          if (state.gameDate !== currentDate) {
+            // Clear the storage if it's a new day
+            localStorage.removeItem("frantic-five-storage");
+            // Reset the state
+            useGameStore.setState({
+              topWord: "",
+              bottomWord: "",
+              secretWord: "",
+              currentGuess: ["", "", "", "", ""],
+              isGameWon: false,
+              isGameOver: false,
+              invalidWord: false,
+              attempts: 0,
+              showCongrats: false,
+              showHowToPlay: false, // Don't show how to play on new day
+              disabledLetters: [],
+              isLoading: true,
+              todayCompleted: false,
+              gameDate: currentDate,
+              wordList: [],
+              error: null,
+              feedbackMessage: null,
+              updatedTopWord: false,
+              updatedBottomWord: false,
+            });
+          }
+        }
       },
     }
   )

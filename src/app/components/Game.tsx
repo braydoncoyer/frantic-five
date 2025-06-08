@@ -110,8 +110,7 @@ const Game: React.FC = () => {
 
   return (
     <div className="flex flex-col items-center justify-around min-h-screen bg-slate-900 p-4">
-      <div className="flex justify-between w-full text-xl sm:text-3xl text-white/30 font-bold max-w-[625px]">
-        <h2>Frantic Five</h2>
+      <div className="flex justify-center w-full text-xl sm:text-3xl text-white/30 font-bold max-w-[625px]">
         <h3>Attempts: {attempts}</h3>
       </div>
       {!todayCompleted && (
@@ -123,6 +122,15 @@ const Game: React.FC = () => {
       )}
 
       <Keyboard />
+      <p className="text-xs text-slate-500">
+        Frantic Five - a daily puzzle game by{" "}
+        <a
+          className="text-emerald-600 underline hover:text-emerald-500"
+          href="https://braydoncoyer.dev"
+        >
+          Braydon
+        </a>
+      </p>
       <CongratsModal />
       <HowToPlayModal />
       <HelpButton />
