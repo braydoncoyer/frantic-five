@@ -52,9 +52,7 @@ const HowToPlayModal: React.FC = () => {
                   </li>
                 </ul>
               </li>
-              <li>
-                A new word is available every day at midnight Central Time.
-              </li>
+              <li>A new word is available every day at midnight.</li>
             </ol>
           </div>
         </div>

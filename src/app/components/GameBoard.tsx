@@ -217,7 +217,7 @@ const GameBoard: React.FC = () => {
   };
 
   return (
-    <div className="mb-8 w-full max-w-3xl mx-auto text-slate-900 font-sans">
+    <div className="mb-8 w-full max-w-3xl mx-auto text-slate-900 font-sans relative">
       {/* Top word */}
       <div className="flex gap-3 sm:gap-4 w-full mb-6 sm:mb-8">
         {topWord.split("").map((letter, index) => (
@@ -255,7 +255,7 @@ const GameBoard: React.FC = () => {
 
       {/* Feedback message */}
       {feedbackMessage && (
-        <div className="text-center mb-4 text-red-600 font-medium text-sm sm:text-base">
+        <div className="absolute -bottom-13 left-1/2 -translate-x-1/2 text-center text-red-600 font-medium text-sm sm:text-base">
           {feedbackMessage}
         </div>
       )}
