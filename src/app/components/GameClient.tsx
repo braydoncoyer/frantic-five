@@ -49,7 +49,7 @@ const GameClient: React.FC<GameClientProps> = ({
     }
 
     // Check if game was already completed today
-    const savedState = localStorage.getItem("word-finder-storage");
+    const savedState = localStorage.getItem("frantic-five-storage");
     let wasCompletedToday = false;
     let savedAttempts = 0;
     let wasGameWon = false;

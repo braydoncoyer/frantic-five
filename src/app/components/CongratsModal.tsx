@@ -57,13 +57,13 @@ const CongratsModal: React.FC = () => {
             {attempts} {attempts === 1 ? "attempt" : "attempts"}!
           </p>
         ) : (
-          <p className="mb-4">
+          <p className="mb-4 text-gray-600">
             The secret word was{" "}
             <span className="font-bold uppercase">{secretWord}</span>.
           </p>
         )}
         <p className="mb-4 text-gray-600">
-          Come back tomorrow for a new word at midnight Central Time.
+          Come back tomorrow for a new Frantic Five puzzle!
         </p>
         <div className="flex gap-3">
           <button

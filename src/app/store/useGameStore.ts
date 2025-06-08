@@ -563,7 +563,7 @@ const useGameStore = create<GameState>()(
       openHowToPlayModal: () => set({ showHowToPlay: true }),
     }),
     {
-      name: "word-finder-storage", // Local storage key
+      name: "frantic-five-storage", // Local storage key
       partialize: (state) => {
         // Check if it's a new day by comparing with current date
         const currentDate = new Date().toISOString().split("T")[0];
@@ -571,7 +571,7 @@ const useGameStore = create<GameState>()(
         // If it's a new day, clear the storage
         if (state.gameDate !== currentDate) {
           // Clear the storage by returning an empty object
-          localStorage.removeItem("word-finder-storage");
+          localStorage.removeItem("frantic-five-storage");
           return {};
         }
         
@@ -592,7 +592,7 @@ const useGameStore = create<GameState>()(
           const currentDate = new Date().toISOString().split("T")[0];
           if (state.gameDate !== currentDate) {
             // Clear the storage if it's a new day
-            localStorage.removeItem("word-finder-storage");
+            localStorage.removeItem("frantic-five-storage");
             // Reset the state
             useGameStore.setState({
               topWord: "",
