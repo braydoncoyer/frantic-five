@@ -19,6 +19,9 @@ const helveticaNeue = localFont({
     },
   ],
   variable: "--font-helvetica-neue",
+  display: "swap",
+  preload: true,
+  fallback: ["Arial", "sans-serif"],
 });
 
 export const metadata: Metadata = {
