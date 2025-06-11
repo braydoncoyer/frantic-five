@@ -14,6 +14,7 @@ const GameBoard: React.FC = () => {
     feedbackMessage,
     updatedTopWord,
     updatedBottomWord,
+    showLetterColors,
   } = useGameStore();
 
   // Track which row should animate
@@ -55,18 +56,22 @@ const GameBoard: React.FC = () => {
 
   // Update letter colors when words change
   useEffect(() => {
-    if (secretWord && topWord) {
+    if (secretWord && topWord && updatedTopWord) {
       const colors = calculateLetterColors(topWord, secretWord);
       setTopWordColors(colors);
+    } else {
+      setTopWordColors(new Array(5).fill("bg-white"));
     }
-  }, [topWord, secretWord]);
+  }, [topWord, secretWord, updatedTopWord]);
 
   useEffect(() => {
-    if (secretWord && bottomWord) {
+    if (secretWord && bottomWord && updatedBottomWord) {
       const colors = calculateLetterColors(bottomWord, secretWord);
       setBottomWordColors(colors);
+    } else {
+      setBottomWordColors(new Array(5).fill("bg-white"));
     }
-  }, [bottomWord, secretWord]);
+  }, [bottomWord, secretWord, updatedBottomWord]);
 
   // Function to calculate letter colors for a word
   const calculateLetterColors = (word: string, secret: string): string[] => {
@@ -116,11 +121,7 @@ const GameBoard: React.FC = () => {
     index: number,
     isTopWord: boolean
   ) => {
-    if (!secretWord) return "bg-white";
-
-    // Only show highlights for words that have been updated by player guesses
-    if (isTopWord && !updatedTopWord) return "bg-white";
-    if (!isTopWord && !updatedBottomWord) return "bg-white";
+    if (!secretWord || !showLetterColors) return "bg-white";
 
     // Get the color from the stored colors
     const colors = isTopWord ? topWordColors : bottomWordColors;

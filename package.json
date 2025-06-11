@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.8",
+    "@vemetric/react": "^0.5.4",
     "framer-motion": "^12.15.0",
     "geist": "^1.4.2",
     "motion": "^12.15.0",

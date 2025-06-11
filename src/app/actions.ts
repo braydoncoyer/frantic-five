@@ -31,23 +31,6 @@ export async function getTodaysWord() {
     const clientDate = new Date().toISOString().split("T")[0];
     console.log("Client date:", clientDate);
 
-    // Get timezone debug info
-    const { data: tzDebugData } = await supabase.rpc("debug_all_timezone_info");
-    console.log("Timezone debug info:", tzDebugData);
-
-    // Get all daily words for debugging
-    const { data: allDailyWords } = await supabase
-      .from("daily_words")
-      .select(
-        `
-        date,
-        word:words!daily_words_word_id_fkey(word)
-      `
-      )
-      .order("date", { ascending: false })
-      .limit(5);
-
-    console.log("Recent daily words:", allDailyWords);
 
     // Simple raw SQL query to get today's word
     const { data, error } = await supabase
@@ -66,70 +49,103 @@ export async function getTodaysWord() {
       // If no word found for today, try to set it
       if (error.code === "PGRST116") {
         // No rows found
-        console.log("No word found for today, trying to set it...");
-        // USE ADMIN CLIENT for the mutation
-        const { data: setWordResult, error: setWordError } =
-          await adminSupabase.rpc("create_daily_puzzle", { target_date: clientDate });
+        console.log("No word found for today, checking if we should create it...");
+        
+        // Check if it's after midnight
+        const now = new Date();
+        const hours = now.getHours();
+        const minutes = now.getMinutes();
+        
+        // Only create a new puzzle if it's after midnight
+        if (hours === 0 && minutes < 5) {
+          console.log("It's after midnight, creating new puzzle...");
+          // USE ADMIN CLIENT for the mutation
+          const { data: setWordResult, error: setWordError } =
+            await adminSupabase.rpc("create_daily_puzzle", { target_date: clientDate });
 
-        if (setWordError) {
-          console.error("Error setting daily word:", setWordError);
-          return {
-            word: null,
-            error: "Could not set daily word: " + setWordError.message,
-            serverDate: clientDate,
-            debugInfo: {
-              tzInfo: tzDebugData,
-              recentWords: allDailyWords,
-              setWordAttempt: "Failed: " + setWordError.message,
-            },
+          if (setWordError) {
+            console.error("Error setting daily word:", setWordError);
+            return {
+              word: null,
+              error: "Could not set daily word: " + setWordError.message,
+              serverDate: clientDate,
+              debugInfo: {
+                note: "Failed to set daily word",
+                setWordAttempt: "Failed: " + setWordError.message,
+              },
+            };
+          }
+
+          console.log("Set word result:", setWordResult);
+
+          type RetryWordResponse = {
+            date: string;
+            word: {
+              word: string;
+            };
           };
-        }
 
-        console.log("Set word result:", setWordResult);
-
-        type RetryWordResponse = {
-          date: string;
-          word: {
-            word: string;
-          };
-        };
-
-        // Try to get the word again (can use regular client for read)
-        const { data: retryData, error: retryError } = await supabase
-          .from("daily_words")
-          .select(
+          // Try to get the word again (can use regular client for read)
+          const { data: retryData, error: retryError } = await supabase
+            .from("daily_words")
+            .select(
+              `
+              date,
+              word:words!daily_words_word_id_fkey(word)
             `
-            date,
-            word:words!daily_words_word_id_fkey(word)
-          `
-          )
-          .eq("date", clientDate)
-          .single();
+            )
+            .eq("date", clientDate)
+            .single();
 
-        if (retryError || !retryData || !retryData.word) {
-          console.error("Error fetching daily word after setting:", retryError);
+          if (retryError || !retryData || !retryData.word) {
+            console.error("Error fetching daily word after setting:", retryError);
+            return {
+              word: null,
+              error: "Could not get word after setting",
+              serverDate: clientDate,
+              debugInfo: {
+                setWordAttempt: setWordResult,
+              },
+            };
+          }
+
           return {
-            word: null,
-            error: "Could not get word after setting",
+            word: (retryData as unknown as RetryWordResponse).word.word,
+            error: null,
             serverDate: clientDate,
             debugInfo: {
-              tzInfo: tzDebugData,
-              recentWords: allDailyWords,
               setWordAttempt: setWordResult,
             },
           };
+        } else {
+          console.log("Not after midnight, not creating new puzzle");
+          // Try to get the previous day's word
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          const yesterdayDate = yesterday.toISOString().split("T")[0];
+          
+          const { data: yesterdayData, error: yesterdayError } = await supabase
+            .from("daily_words")
+            .select(
+              `
+              date,
+              word:words!daily_words_word_id_fkey(word)
+            `
+            )
+            .eq("date", yesterdayDate)
+            .single();
+            
+          if (!yesterdayError && yesterdayData) {
+            return {
+              word: (yesterdayData as unknown as { date: string; word: { word: string } }).word.word,
+              error: null,
+              serverDate: yesterdayDate,
+              debugInfo: {
+                note: "Using yesterday's word"
+              },
+            };
+          }
         }
-
-        return {
-          word: (retryData as unknown as RetryWordResponse).word.word,
-          error: null,
-          serverDate: clientDate,
-          debugInfo: {
-            tzInfo: tzDebugData,
-            recentWords: allDailyWords,
-            setWordAttempt: setWordResult,
-          },
-        };
       }
 
       return {
@@ -137,8 +153,7 @@ export async function getTodaysWord() {
         error: error.message,
         serverDate: clientDate,
         debugInfo: {
-          tzInfo: tzDebugData,
-          recentWords: allDailyWords,
+          note: "Error fetching daily word"
         },
       };
     }
@@ -155,8 +170,7 @@ export async function getTodaysWord() {
       error: null,
       serverDate: clientDate,
       debugInfo: {
-        tzInfo: tzDebugData,
-        recentWords: allDailyWords,
+        note: "Successfully fetched daily word"
       },
     };
   } catch (error) {
