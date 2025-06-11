@@ -1,7 +1,7 @@
 // store/useGameStore.ts
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { getTodaysWord, getRandomWord, getInitialWords, getAllWords } from "@/app/actions";
+import { getTodaysWord, getInitialWords, getAllWords } from "@/app/actions";
 import { wordList as localWordList } from "@/utils/wordList";
 
 interface GameState {
@@ -25,6 +25,7 @@ interface GameState {
   feedbackMessage: string | null;
   updatedTopWord: boolean;
   updatedBottomWord: boolean;
+  showLetterColors: boolean;
 
   // Actions
   initializeGame: () => Promise<void>;
@@ -65,6 +66,7 @@ const useGameStore = create<GameState>()(
       feedbackMessage: null,
       updatedTopWord: false,
       updatedBottomWord: false,
+      showLetterColors: false,
 
       // Set the word list
       setWordList: (words: string[]) => {
@@ -96,6 +98,37 @@ const useGameStore = create<GameState>()(
         });
 
         try {
+          // Get today's date from client
+          const currentDate = new Date().toISOString().split("T")[0];
+          const { gameDate: storedDate, todayCompleted } = get();
+
+          // Check if we have saved words in local storage for today
+          const savedWords = localStorage.getItem(`frantic-five-words-${currentDate}`);
+          let savedState = null;
+          
+          if (savedWords) {
+            try {
+              savedState = JSON.parse(savedWords);
+              // If we have saved state and either word has been updated, use it
+              if (savedState.updatedTopWord || savedState.updatedBottomWord) {
+                console.log("Using saved words from local storage:", savedState);
+                const { word, error } = await getTodaysWord();
+                if (error) {
+                  throw new Error(error);
+                }
+                setupGameWithInitialWords(word || "", savedState.topWord, savedState.bottomWord, currentDate);
+                set({ 
+                  updatedTopWord: savedState.updatedTopWord,
+                  updatedBottomWord: savedState.updatedBottomWord
+                });
+                return;
+              }
+            } catch (error) {
+              console.error("Error parsing saved words:", error);
+            }
+          }
+
+          // If no saved state or no updates, proceed with normal initialization
           // Get words from Supabase
           console.log("Fetching words from Supabase...");
           const supabaseWords = await getAllWords();
@@ -105,10 +138,6 @@ const useGameStore = create<GameState>()(
           const combinedWordList = [...new Set([...supabaseWords, ...localWordList])].sort();
           console.log(`Combined word list has ${combinedWordList.length} unique words`);
           set({ wordList: combinedWordList });
-
-          // Get today's date from client
-          const currentDate = new Date().toISOString().split("T")[0];
-          const { gameDate: storedDate, todayCompleted } = get();
 
           // If it's a new day, reset all game state
           if (storedDate !== currentDate) {
@@ -131,10 +160,14 @@ const useGameStore = create<GameState>()(
 
           // Get today's word and initial words from the server
           console.log("Fetching today's word and initial words...");
-          const [{ word, error }, { topWord, bottomWord }] = await Promise.all([
+          const [{ word, error: wordError }, { topWord, bottomWord }] = await Promise.all([
             getTodaysWord(),
             getInitialWords()
           ]);
+
+          if (wordError) {
+            throw new Error(wordError);
+          }
             
           // If we have initial words from Supabase, use them
           if (topWord && bottomWord) {
@@ -163,64 +196,6 @@ const useGameStore = create<GameState>()(
               showCongrats: true,
             });
             return;
-          }
-
-          // Check if we have saved words in local storage
-          const savedWords = localStorage.getItem(`frantic-five-words-${currentDate}`);
-          if (savedWords) {
-            try {
-              const { topWord: savedTopWord, bottomWord: savedBottomWord, updatedTopWord, updatedBottomWord } = JSON.parse(savedWords);
-              if (savedTopWord && savedBottomWord) {
-                console.log("Restoring saved words from local storage:", { savedTopWord, savedBottomWord });
-                setupGameWithInitialWords(word || "", savedTopWord, savedBottomWord, currentDate);
-                // Restore the update flags
-                set({ updatedTopWord, updatedBottomWord });
-                return;
-              }
-            } catch (error) {
-              console.error("Error parsing saved words:", error);
-            }
-          }
-
-          if (!word) {
-            console.error("Error getting daily word:", error);
-
-            // Try fallback to random word
-            console.log("Trying fallback to random word...");
-            const { word: fallbackWord } = await getRandomWord();
-
-            if (!fallbackWord) {
-              set({
-                isLoading: false,
-                error: "Could not get a word. Please try again later.",
-              });
-              return;
-            }
-
-            // Use fallback word
-            console.log("Using fallback random word:", fallbackWord);
-            setupGame(fallbackWord, currentDate, localWordList);
-            return;
-          }
-
-          // Successfully got daily word
-          console.log("Using daily word:", word);
-          
-          // If we have initial words from Supabase, use them
-          if (topWord && bottomWord) {
-            console.log("Using initial words from Supabase:", { topWord, bottomWord });
-            setupGameWithInitialWords(word, topWord, bottomWord, currentDate);
-            // Save initial words to local storage (excluding secret word)
-            localStorage.setItem(`frantic-five-words-${currentDate}`, JSON.stringify({
-              topWord,
-              bottomWord,
-              updatedTopWord: false,
-              updatedBottomWord: false
-            }));
-          } else {
-            // Fallback to the old method of selecting initial words
-            console.log("Falling back to local initial word selection");
-            setupGame(word, currentDate, localWordList);
           }
         } catch (error) {
           console.error("Error initializing game:", error);
@@ -259,6 +234,8 @@ const useGameStore = create<GameState>()(
               isLoading: false,
               todayCompleted: false,
               error: null,
+              updatedTopWord: false,
+              updatedBottomWord: false,
             });
           } else {
             // Same day, just update the words and ensure game state is correct
@@ -272,6 +249,8 @@ const useGameStore = create<GameState>()(
               isGameWon: false,
               showCongrats: false,
               currentGuess: ["", "", "", "", ""],
+              updatedTopWord: false,
+              updatedBottomWord: false,
             });
           }
         }
@@ -614,6 +593,7 @@ const useGameStore = create<GameState>()(
               feedbackMessage: null,
               updatedTopWord: false,
               updatedBottomWord: false,
+              showLetterColors: false,
             });
           }
         }

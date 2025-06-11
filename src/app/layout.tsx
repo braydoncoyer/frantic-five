@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { GeistSans } from "geist/font/sans";
 import localFont from "next/font/local";
 import "./globals.css";
+import { VemetricScript } from "@vemetric/react";
 
 const helveticaNeue = localFont({
   src: [
@@ -36,7 +37,15 @@ export default function RootLayout({
       lang="en"
       className={`${GeistSans.variable} ${helveticaNeue.variable} font-sans`}
     >
-      <body>{children}</body>
+      <head>
+        <link rel="icon" href="/favicon.ico" sizes="48x48" />
+        <link rel="icon" href="/icon.svg" sizes="any" type="image/svg+xml" />
+        <link rel="apple-icon" href="/apple-touch-icon.png" />
+      </head>
+      <body>
+        <VemetricScript token="31FuNJM6tS1zmuxp" />
+        {children}
+      </body>
     </html>
   );
 }
