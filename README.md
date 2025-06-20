@@ -1,4 +1,23 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Frantic Five
+
+A daily word puzzle game where you guess a secret word by narrowing down the range between two boundary words.
+
+## How to Play
+
+1. You're given a top word and a bottom word
+2. Guess a word that comes alphabetically between them
+3. Your guess will become the new top or bottom word, narrowing the range
+4. **Auto-fill Feature**: When the top and bottom words share common letters at the beginning, those letters are automatically filled in for you
+5. Continue guessing until you find the secret word!
+
+## Auto-Fill Feature
+
+The game automatically fills in letters that are guaranteed to be correct based on the current top and bottom words. For example:
+
+- If the top word is "TEARS" and the bottom word is "TEMPTS"
+- Both words start with "TE", so "T" and "E" will be auto-filled in the first two positions
+- Auto-filled letters are shown with a gray background and a blue checkmark
+- You cannot edit or delete auto-filled letters
 
 ## Getting Started
 
@@ -16,9 +35,22 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Features
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Daily word puzzles
+- Auto-fill functionality for common letters
+- Visual feedback with color-coded letters
+- Keyboard and mouse input support
+- Persistent game state
+- Responsive design
+
+## Tech Stack
+
+- [Next.js](https://nextjs.org) - React framework
+- [Zustand](https://zustand-demo.pmnd.rs/) - State management
+- [Framer Motion](https://www.framer.com/motion/) - Animations
+- [Tailwind CSS](https://tailwindcss.com) - Styling
+- [Supabase](https://supabase.com) - Backend database
 
 ## Learn More
 

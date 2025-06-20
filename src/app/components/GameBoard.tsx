@@ -15,6 +15,7 @@ const GameBoard: React.FC = () => {
     updatedTopWord,
     updatedBottomWord,
     showLetterColors,
+    autoFilledPositions,
   } = useGameStore();
 
   // Track which row should animate
@@ -119,9 +120,16 @@ const GameBoard: React.FC = () => {
   const getLetterColor = (
     letter: string,
     index: number,
-    isTopWord: boolean
+    isTopWord: boolean,
+    isCenterRow: boolean = false
   ) => {
-    if (!secretWord || !showLetterColors) return "bg-white";
+    if (!secretWord || !showLetterColors) {
+      // Only apply auto-fill styling to the center row
+      if (isCenterRow && autoFilledPositions[index]) {
+        return "bg-emerald-500 text-white";
+      }
+      return "bg-white";
+    }
 
     // Get the color from the stored colors
     const colors = isTopWord ? topWordColors : bottomWordColors;
@@ -131,7 +139,7 @@ const GameBoard: React.FC = () => {
   // Helper to determine shadow color based on tile state
   const getTileShadowColor = (colorClass: string) => {
     if (colorClass.includes("bg-emerald-500")) {
-      return "shadow-[0_5px_0_0_#006045] sm:shadow-[0_8px_0_0_#006045]"; // Correct position
+      return "shadow-[0_5px_0_0_#006045] sm:shadow-[0_8px_0_0_#006045]"; // Correct position or auto-filled
     }
     if (colorClass.includes("bg-orange-400")) {
       return "shadow-[0_5px_0_0_#9F2D00] sm:shadow-[0_8px_0_0_#9F2D00]"; // Wrong position but in puzzle
@@ -183,19 +191,25 @@ const GameBoard: React.FC = () => {
     letter: string;
     index: number;
   }) => {
+    const isAutoFilled = autoFilledPositions[index];
+    const letterColor = getLetterColor(letter, index, false, true);
+
     return (
       <motion.div
         key={`center-${index}`}
-        className={`relative flex-1 cursor-pointer ${
+        className={`relative flex-1 ${
           letter
-            ? "w-[60px] sm:w-[112px] min-w-[60px] sm:min-w-[112px] max-w-[60px] sm:max-w-[112px] h-[60px] sm:h-[104px] min-h-[60px] sm:min-h-[104px] max-h-[60px] sm:max-h-[104px] bg-white rounded-xl sm:rounded-2xl flex items-center justify-center text-5xl sm:text-7xl font-['Helvetica_Neue'] font-bold uppercase text-[#414141] hover:cursor-pointer" +
-              getTileShadowColor(getLetterColor(letter, index, false))
+            ? `w-[60px] sm:w-[112px] min-w-[60px] sm:min-w-[112px] max-w-[60px] sm:max-w-[112px] h-[60px] sm:h-[104px] min-h-[60px] sm:min-h-[104px] max-h-[60px] sm:max-h-[104px] rounded-xl sm:rounded-2xl flex items-center justify-center text-5xl sm:text-7xl font-['Helvetica_Neue'] font-bold uppercase ${
+                isAutoFilled ? "cursor-not-allowed" : "hover:cursor-pointer"
+              } ${
+                isAutoFilled ? "bg-emerald-500" : "bg-white"
+              } ${letterColor}` + getTileShadowColor(letterColor)
             : `w-[60px] sm:w-[112px] min-w-[60px] sm:min-w-[112px] max-w-[60px] sm:max-w-[112px] h-[60px] sm:h-[112px] min-h-[60px] sm:min-h-[112px] max-h-[60px] sm:max-h-[112px] border-2 border-dashed border-slate-500 ${
                 invalidWord ? "border-red-500" : ""
               } rounded-xl sm:rounded-2xl flex items-center justify-center text-5xl sm:text-7xl font-['Helvetica_Neue'] font-bold uppercase text-[#414141]`
         }`}
         onClick={() => {
-          if (letter && !isGameWon) {
+          if (letter && !isGameWon && !isAutoFilled) {
             removeLetter(index);
           }
         }}
@@ -212,7 +226,13 @@ const GameBoard: React.FC = () => {
             : {}
         }
       >
-        <p className="m-0 z-10">{letter}</p>
+        <p
+          className={`m-0 z-10 ${
+            letterColor.includes("text-white") ? "text-white" : "text-[#414141]"
+          }`}
+        >
+          {letter}
+        </p>
       </motion.div>
     );
   };

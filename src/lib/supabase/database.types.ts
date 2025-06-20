@@ -81,22 +81,6 @@ export interface Database {
     Views: {
       [_ in never]: never;
     };
-    Functions: {
-      insert_initial_words: {
-        Args: Record<PropertyKey, never>;
-        Returns: undefined;
-      };
-      set_daily_word: {
-        Args: Record<PropertyKey, never>;
-        Returns: undefined;
-      };
-      add_new_words: {
-        Args: {
-          new_words: string[];
-        };
-        Returns: undefined;
-      };
-    };
     Enums: {
       [_ in never]: never;
     };
