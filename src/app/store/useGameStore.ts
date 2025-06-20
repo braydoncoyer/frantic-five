@@ -26,6 +26,7 @@ interface GameState {
   updatedTopWord: boolean;
   updatedBottomWord: boolean;
   showLetterColors: boolean;
+  autoFilledPositions: boolean[]; // Track which positions are auto-filled
 
   // Actions
   initializeGame: () => Promise<void>;
@@ -40,6 +41,8 @@ interface GameState {
   clearError: () => void;
   setWordList: (words: string[]) => void;
   clearFeedback: () => void;
+  calculateAutoFillLetters: () => string[]; // New function to calculate auto-fill letters
+  applyAutoFill: () => void; // New function to apply auto-fill
 }
 
 // Create a game store with persistence for tracking completion status
@@ -67,6 +70,7 @@ const useGameStore = create<GameState>()(
       updatedTopWord: false,
       updatedBottomWord: false,
       showLetterColors: false,
+      autoFilledPositions: [false, false, false, false, false],
 
       // Set the word list
       setWordList: (words: string[]) => {
@@ -79,6 +83,63 @@ const useGameStore = create<GameState>()(
 
       // Clear feedback message
       clearFeedback: () => set({ feedbackMessage: null }),
+
+      // Calculate which letters should be auto-filled based on top and bottom words
+      calculateAutoFillLetters: () => {
+        const { topWord, bottomWord } = get();
+        const autoFillLetters = ["", "", "", "", ""];
+        
+        console.log(`Calculating auto-fill letters for: ${topWord} - ${bottomWord}`);
+        
+        // Find the longest common prefix between top and bottom words
+        let commonPrefixLength = 0;
+        for (let i = 0; i < 5; i++) {
+          if (topWord[i] === bottomWord[i]) {
+            commonPrefixLength = i + 1;
+          } else {
+            break;
+          }
+        }
+        
+        // Auto-fill the common prefix
+        for (let i = 0; i < commonPrefixLength; i++) {
+          autoFillLetters[i] = topWord[i];
+        }
+        
+        console.log(`Auto-fill letters: ${autoFillLetters.join('')} (common prefix length: ${commonPrefixLength})`);
+        return autoFillLetters;
+      },
+
+      // Apply auto-fill to the current guess
+      applyAutoFill: () => {
+        const { currentGuess, autoFilledPositions } = get();
+        const autoFillLetters = get().calculateAutoFillLetters();
+        const newGuess = [...currentGuess];
+        const newAutoFilledPositions = [...autoFilledPositions];
+        let hasChanges = false;
+        
+        console.log(`Applying auto-fill. Current guess: ${currentGuess.join('')}, Auto-fill letters: ${autoFillLetters.join('')}`);
+        
+        // Apply auto-fill letters to empty positions
+        for (let i = 0; i < 5; i++) {
+          if (autoFillLetters[i] && newGuess[i] === "") {
+            newGuess[i] = autoFillLetters[i];
+            newAutoFilledPositions[i] = true;
+            hasChanges = true;
+            console.log(`Auto-filled position ${i} with letter: ${autoFillLetters[i]}`);
+          }
+        }
+        
+        if (hasChanges) {
+          console.log(`Auto-fill applied. New guess: ${newGuess.join('')}`);
+          set({ 
+            currentGuess: newGuess,
+            autoFilledPositions: newAutoFilledPositions
+          });
+        } else {
+          console.log('No auto-fill changes needed');
+        }
+      },
 
       // Initialize game
       initializeGame: async () => {
@@ -121,6 +182,9 @@ const useGameStore = create<GameState>()(
                   updatedTopWord: savedState.updatedTopWord,
                   updatedBottomWord: savedState.updatedBottomWord
                 });
+                
+                // Apply auto-fill after restoring saved words
+                get().applyAutoFill();
                 return;
               }
             } catch (error) {
@@ -236,6 +300,7 @@ const useGameStore = create<GameState>()(
               error: null,
               updatedTopWord: false,
               updatedBottomWord: false,
+              autoFilledPositions: [false, false, false, false, false],
             });
           } else {
             // Same day, just update the words and ensure game state is correct
@@ -251,8 +316,12 @@ const useGameStore = create<GameState>()(
               currentGuess: ["", "", "", "", ""],
               updatedTopWord: false,
               updatedBottomWord: false,
+              autoFilledPositions: [false, false, false, false, false],
             });
           }
+          
+          // Apply auto-fill after setting up the game
+          get().applyAutoFill();
         }
 
         // Helper function to set up the game
@@ -306,6 +375,7 @@ const useGameStore = create<GameState>()(
                 isLoading: false,
                 todayCompleted: false,
                 error: null,
+                autoFilledPositions: [false, false, false, false, false],
               });
             } else {
               // Same day, just update the words and ensure game state is correct
@@ -319,8 +389,12 @@ const useGameStore = create<GameState>()(
                 isGameWon: false,
                 showCongrats: false,
                 currentGuess: ["", "", "", "", ""],
+                autoFilledPositions: [false, false, false, false, false],
               });
             }
+            
+            // Apply auto-fill after setting up the game
+            get().applyAutoFill();
             return;
           }
 
@@ -350,6 +424,7 @@ const useGameStore = create<GameState>()(
               isLoading: false,
               todayCompleted: false,
               error: null,
+              autoFilledPositions: [false, false, false, false, false],
             });
           } else {
             // Same day, just update the words and ensure game state is correct
@@ -363,14 +438,18 @@ const useGameStore = create<GameState>()(
               isGameWon: false,
               showCongrats: false,
               currentGuess: ["", "", "", "", ""],
+              autoFilledPositions: [false, false, false, false, false],
             });
           }
+          
+          // Apply auto-fill after setting up the game
+          get().applyAutoFill();
         }
       },
 
       // Handle key press
       handleKeyPress: (key: string) => {
-        const { isGameWon, disabledLetters, todayCompleted } =
+        const { isGameWon, disabledLetters, todayCompleted, autoFilledPositions } =
           get();
 
         if (todayCompleted || isGameWon || disabledLetters.includes(key)) {
@@ -380,7 +459,7 @@ const useGameStore = create<GameState>()(
         set((state) => {
           const newGuess = [...state.currentGuess];
           for (let i = 0; i < 5; i++) {
-            if (newGuess[i] === "") {
+            if (newGuess[i] === "" && !autoFilledPositions[i]) {
               newGuess[i] = key;
               return { currentGuess: newGuess };
             }
@@ -391,27 +470,27 @@ const useGameStore = create<GameState>()(
 
       // Handle backspace
       handleBackspace: () => {
-        const { todayCompleted, isGameWon } = get();
+        const { todayCompleted, isGameWon, autoFilledPositions } = get();
 
         if (todayCompleted || isGameWon) return;
 
         set((state) => {
           const newGuess = [...state.currentGuess];
           for (let i = 4; i >= 0; i--) {
-            if (newGuess[i] !== "") {
+            if (newGuess[i] !== "" && !autoFilledPositions[i]) {
               newGuess[i] = "";
               return { currentGuess: newGuess };
             }
           }
-          return {}; // All positions empty
+          return {}; // All positions empty or auto-filled
         });
       },
 
       // Remove letter at specific index
       removeLetter: (index: number) => {
-        const { todayCompleted, isGameWon } = get();
+        const { todayCompleted, isGameWon, autoFilledPositions } = get();
 
-        if (todayCompleted || isGameWon) return;
+        if (todayCompleted || isGameWon || autoFilledPositions[index]) return;
 
         set((state) => {
           const newGuess = [...state.currentGuess];
@@ -448,8 +527,10 @@ const useGameStore = create<GameState>()(
               set({
                 invalidWord: false,
                 currentGuess: ["", "", "", "", ""],
-                feedbackMessage: null
+                feedbackMessage: null,
               });
+              // Reapply auto-fill after clearing the error
+              get().applyAutoFill();
             }, 1500);
             return;
           }
@@ -465,8 +546,10 @@ const useGameStore = create<GameState>()(
               set({
                 invalidWord: false,
                 currentGuess: ["", "", "", "", ""],
-                feedbackMessage: null
+                feedbackMessage: null,
               });
+              // Reapply auto-fill after clearing the error
+              get().applyAutoFill();
             }, 1500);
             return;
           }
@@ -481,8 +564,10 @@ const useGameStore = create<GameState>()(
               set({
                 invalidWord: false,
                 currentGuess: ["", "", "", "", ""],
-                feedbackMessage: null
+                feedbackMessage: null,
               });
+              // Reapply auto-fill after clearing the error
+              get().applyAutoFill();
             }, 1500);
             return;
           }
@@ -504,6 +589,7 @@ const useGameStore = create<GameState>()(
                 topWord: word,
                 currentGuess: ["", "", "", "", ""],
                 updatedTopWord: true,
+                autoFilledPositions: [false, false, false, false, false],
               });
               // Save updated words to local storage (excluding secret word)
               const currentDate = new Date().toISOString().split("T")[0];
@@ -513,11 +599,15 @@ const useGameStore = create<GameState>()(
                 updatedTopWord: true,
                 updatedBottomWord: get().updatedBottomWord
               }));
+              
+              // Apply auto-fill after updating the top word
+              get().applyAutoFill();
             } else {
               set({
                 bottomWord: word,
                 currentGuess: ["", "", "", "", ""],
                 updatedBottomWord: true,
+                autoFilledPositions: [false, false, false, false, false],
               });
               // Save updated words to local storage (excluding secret word)
               const currentDate = new Date().toISOString().split("T")[0];
@@ -527,6 +617,9 @@ const useGameStore = create<GameState>()(
                 updatedTopWord: get().updatedTopWord,
                 updatedBottomWord: true
               }));
+              
+              // Apply auto-fill after updating the bottom word
+              get().applyAutoFill();
             }
           }
         }
@@ -561,6 +654,8 @@ const useGameStore = create<GameState>()(
           attempts: state.attempts,
           showCongrats: state.showCongrats,
           isGameWon: state.isGameWon,
+          autoFilledPositions: state.autoFilledPositions,
+          currentGuess: state.currentGuess,
         };
       },
       // Add version to force clear on new day
@@ -594,7 +689,26 @@ const useGameStore = create<GameState>()(
               updatedTopWord: false,
               updatedBottomWord: false,
               showLetterColors: false,
+              autoFilledPositions: [false, false, false, false, false],
             });
+          } else {
+            // Same day, restore the saved state
+            useGameStore.setState({
+              currentGuess: state.currentGuess || ["", "", "", "", ""],
+              autoFilledPositions: state.autoFilledPositions || [false, false, false, false, false],
+              attempts: state.attempts || 0,
+              showCongrats: state.showCongrats || false,
+              isGameWon: state.isGameWon || false,
+              todayCompleted: state.todayCompleted || false,
+            });
+            
+            // Apply auto-fill after restoring state (but only if game is not completed)
+            if (!state.todayCompleted && !state.isGameWon) {
+              const store = useGameStore.getState();
+              if (store.topWord && store.bottomWord) {
+                store.applyAutoFill();
+              }
+            }
           }
         }
       },
