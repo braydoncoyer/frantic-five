@@ -236,6 +236,23 @@ const useGameStore = create<GameState>()(
           // If we have initial words from Supabase, use them
           if (topWord && bottomWord) {
             console.log("Using initial words from Supabase:", { topWord, bottomWord });
+            
+            // Debug: Check alphabetical ordering
+            const topLower = topWord.toLowerCase();
+            const bottomLower = bottomWord.toLowerCase();
+            const secretLower = (word || "").toLowerCase();
+            
+            console.log("Alphabetical ordering check:");
+            console.log(`Top word (${topLower}) < Secret word (${secretLower}): ${topLower < secretLower}`);
+            console.log(`Bottom word (${bottomLower}) > Secret word (${secretLower}): ${bottomLower > secretLower}`);
+            
+            if (topLower >= secretLower) {
+              console.error("WARNING: Top word is not before secret word!");
+            }
+            if (bottomLower <= secretLower) {
+              console.error("WARNING: Bottom word is not after secret word!");
+            }
+            
             setupGameWithInitialWords(word || "", topWord, bottomWord, currentDate);
             // Save initial words to local storage (excluding secret word)
             localStorage.setItem(`frantic-five-words-${currentDate}`, JSON.stringify({
@@ -585,6 +602,7 @@ const useGameStore = create<GameState>()(
           } else {
             // Determine if guess goes above or below the secret word
             if (word < secretWord.toLowerCase()) {
+              console.log(`Guess "${word}" is before secret word "${secretWord.toLowerCase()}", updating top word`);
               set({
                 topWord: word,
                 currentGuess: ["", "", "", "", ""],
@@ -603,6 +621,7 @@ const useGameStore = create<GameState>()(
               // Apply auto-fill after updating the top word
               get().applyAutoFill();
             } else {
+              console.log(`Guess "${word}" is after secret word "${secretWord.toLowerCase()}", updating bottom word`);
               set({
                 bottomWord: word,
                 currentGuess: ["", "", "", "", ""],
