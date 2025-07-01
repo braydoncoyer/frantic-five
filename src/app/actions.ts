@@ -49,103 +49,66 @@ export async function getTodaysWord() {
       // If no word found for today, try to set it
       if (error.code === "PGRST116") {
         // No rows found
-        console.log("No word found for today, checking if we should create it...");
+        console.log("No word found for today, creating new puzzle...");
         
-        // Check if it's after midnight
-        const now = new Date();
-        const hours = now.getHours();
-        const minutes = now.getMinutes();
-        
-        // Only create a new puzzle if it's after midnight
-        if (hours === 0 && minutes < 5) {
-          console.log("It's after midnight, creating new puzzle...");
-          // USE ADMIN CLIENT for the mutation
-          const { data: setWordResult, error: setWordError } =
-            await adminSupabase.rpc("create_daily_puzzle", { target_date: clientDate });
+        // USE ADMIN CLIENT for the mutation
+        const { data: setWordResult, error: setWordError } =
+          await adminSupabase.rpc("create_daily_puzzle", { target_date: clientDate });
 
-          if (setWordError) {
-            console.error("Error setting daily word:", setWordError);
-            return {
-              word: null,
-              error: "Could not set daily word: " + setWordError.message,
-              serverDate: clientDate,
-              debugInfo: {
-                note: "Failed to set daily word",
-                setWordAttempt: "Failed: " + setWordError.message,
-              },
-            };
-          }
-
-          console.log("Set word result:", setWordResult);
-
-          type RetryWordResponse = {
-            date: string;
-            word: {
-              word: string;
-            };
-          };
-
-          // Try to get the word again (can use regular client for read)
-          const { data: retryData, error: retryError } = await supabase
-            .from("daily_words")
-            .select(
-              `
-              date,
-              word:words!daily_words_word_id_fkey(word)
-            `
-            )
-            .eq("date", clientDate)
-            .single();
-
-          if (retryError || !retryData || !retryData.word) {
-            console.error("Error fetching daily word after setting:", retryError);
-            return {
-              word: null,
-              error: "Could not get word after setting",
-              serverDate: clientDate,
-              debugInfo: {
-                setWordAttempt: setWordResult,
-              },
-            };
-          }
-
+        if (setWordError) {
+          console.error("Error setting daily word:", setWordError);
           return {
-            word: (retryData as unknown as RetryWordResponse).word.word,
-            error: null,
+            word: null,
+            error: "Could not set daily word: " + setWordError.message,
+            serverDate: clientDate,
+            debugInfo: {
+              note: "Failed to set daily word",
+              setWordAttempt: "Failed: " + setWordError.message,
+            },
+          };
+        }
+
+        console.log("Set word result:", setWordResult);
+
+        type RetryWordResponse = {
+          date: string;
+          word: {
+            word: string;
+          };
+        };
+
+        // Try to get the word again (can use regular client for read)
+        const { data: retryData, error: retryError } = await supabase
+          .from("daily_words")
+          .select(
+            `
+            date,
+            word:words!daily_words_word_id_fkey(word)
+          `
+          )
+          .eq("date", clientDate)
+          .single();
+
+        if (retryError || !retryData || !retryData.word) {
+          console.error("Error fetching daily word after setting:", retryError);
+          return {
+            word: null,
+            error: "Could not get word after setting",
             serverDate: clientDate,
             debugInfo: {
               setWordAttempt: setWordResult,
             },
           };
-        } else {
-          console.log("Not after midnight, not creating new puzzle");
-          // Try to get the previous day's word
-          const yesterday = new Date();
-          yesterday.setDate(yesterday.getDate() - 1);
-          const yesterdayDate = yesterday.toISOString().split("T")[0];
-          
-          const { data: yesterdayData, error: yesterdayError } = await supabase
-            .from("daily_words")
-            .select(
-              `
-              date,
-              word:words!daily_words_word_id_fkey(word)
-            `
-            )
-            .eq("date", yesterdayDate)
-            .single();
-            
-          if (!yesterdayError && yesterdayData) {
-            return {
-              word: (yesterdayData as unknown as { date: string; word: { word: string } }).word.word,
-              error: null,
-              serverDate: yesterdayDate,
-              debugInfo: {
-                note: "Using yesterday's word"
-              },
-            };
-          }
         }
+
+        return {
+          word: (retryData as unknown as RetryWordResponse).word.word,
+          error: null,
+          serverDate: clientDate,
+          debugInfo: {
+            setWordAttempt: setWordResult,
+          },
+        };
       }
 
       return {
@@ -280,6 +243,7 @@ export async function getInitialWords() {
   try {
     // READ operation - use anon client
     const supabase = getSupabaseClient(false);
+    const adminSupabase = getSupabaseClient(true); // Admin client for mutations
 
     // Get client's local date
     const clientDate = new Date().toISOString().split("T")[0];
@@ -301,6 +265,64 @@ export async function getInitialWords() {
 
     if (error) {
       console.error("Error fetching initial words:", error);
+      // If no words found for today, try to create the daily puzzle
+      if (error.code === "PGRST116") {
+        console.log("No initial words found for today, creating new puzzle...");
+        
+        // USE ADMIN CLIENT for the mutation
+        const { data: setWordResult, error: setWordError } =
+          await adminSupabase.rpc("create_daily_puzzle", { target_date: clientDate });
+
+        if (setWordError) {
+          console.error("Error setting daily word:", setWordError);
+          return {
+            topWord: null,
+            bottomWord: null,
+            error: "Could not set daily word: " + setWordError.message,
+          };
+        }
+
+        console.log("Set word result:", setWordResult);
+
+        // Try to get the initial words again
+        const { data: retryData, error: retryError } = await supabase
+          .from("daily_words")
+          .select(
+            `
+            date,
+            word:words!daily_words_word_id_fkey(word),
+            initial_top_word:words!daily_words_initial_top_word_id_fkey(word),
+            initial_bottom_word:words!daily_words_initial_bottom_word_id_fkey(word)
+          `
+          )
+          .eq("date", clientDate)
+          .single();
+
+        if (retryError || !retryData || !retryData.initial_top_word || !retryData.initial_bottom_word) {
+          console.error("Error fetching initial words after setting:", retryError);
+          return {
+            topWord: null,
+            bottomWord: null,
+            error: "Could not get initial words after setting",
+          };
+        }
+
+        type InitialWordsResponse = {
+          date: string;
+          word: { word: string };
+          initial_top_word: { word: string };
+          initial_bottom_word: { word: string };
+        };
+
+        const typedData = retryData as unknown as InitialWordsResponse;
+
+        return {
+          topWord: typedData.initial_top_word.word,
+          bottomWord: typedData.initial_bottom_word.word,
+          error: null,
+        };
+      }
+      
       return {
         topWord: null,
         bottomWord: null,
